@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>轻课｜给老师用的效率工具</title>
+  <link rel="icon" type="image/png" href="assets/qingke-logo-icon.png">
+  <link rel="apple-touch-icon" href="assets/qingke-logo-icon.png">
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fbff;
+      --line: #dfe6f0;
+      --line-soft: #e9eef6;
+      --text: #12151c;
+      --muted: #667085;
+      --soft-text: #8a94a6;
+      --blue: #0a84ff;
+      --blue-dark: #0667ce;
+      --blue-soft: #eaf4ff;
+      --orange: #b84a00;
+      --orange-soft: #fff0e2;
+      --shadow: 0 18px 42px rgba(27, 39, 64, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.5;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+      min-height: 72px;
+      padding: 0 7vw;
+      background: rgba(255, 255, 255, 0.9);
+      border-bottom: 1px solid var(--line-soft);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 20px;
+      white-space: nowrap;
+    }
+
+    .tool-icon {
+      position: relative;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: var(--blue);
+      box-shadow: 0 10px 22px rgba(10, 132, 255, 0.24);
+    }
+
+    .tool-icon::before {
+      content: "";
+      width: 19px;
+      height: 17px;
+      border: 2px solid #fff;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .tool-icon::after {
+      content: "";
+      position: absolute;
+      top: 13px;
+      left: 14px;
+      width: 12px;
+      height: 2px;
+      border-radius: 999px;
+      background: #fff;
+    }
+
+    .brand-mark {
+      display: block;
+      flex: 0 0 auto;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      object-fit: cover;
+      box-shadow: 0 10px 22px rgba(10, 132, 255, 0.16);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 34px;
+      color: #4b5565;
+      font-size: 15px;
+      font-weight: 650;
+    }
+
+    .nav a:hover {
+      color: var(--blue);
+    }
+
+    .auth-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 22px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 750;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+    }
+
+    .button.primary {
+      background: var(--blue);
+      color: #fff;
+      box-shadow: 0 10px 22px rgba(10, 132, 255, 0.22);
+    }
+
+    .button.primary:hover {
+      background: var(--blue-dark);
+    }
+
+    .button.secondary {
+      background: rgba(255, 255, 255, 0.88);
+      border-color: #d7dee9;
+      color: #20242c;
+    }
+
+    .button.ghost {
+      min-height: 40px;
+      padding: 0 16px;
+      background: transparent;
+      color: #4b5565;
+      box-shadow: none;
+    }
+
+    .button.small {
+      min-height: 40px;
+      padding: 0 18px;
+      font-size: 14px;
+    }
+
+    .hero {
+      position: relative;
+      min-height: 560px;
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+      padding: 96px 7vw 88px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(245, 247, 251, 0.86)),
+        linear-gradient(90deg, rgba(255,255,255,0.84), rgba(255,255,255,0.42)),
+        repeating-linear-gradient(90deg, rgba(10, 132, 255, 0.12) 0 1px, transparent 1px 132px),
+        repeating-linear-gradient(0deg, rgba(10, 132, 255, 0.09) 0 1px, transparent 1px 92px);
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      width: min(1180px, calc(100vw - 80px));
+      margin: 0 auto;
+      text-align: left;
+    }
+
+    .eyebrow {
+      max-width: 760px;
+      margin: 30px 0 0;
+      color: #5f6b7a;
+      font-size: 22px;
+      font-weight: 500;
+      line-height: 1.55;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 0;
+      font-size: clamp(58px, 7vw, 104px);
+      line-height: 1.08;
+      letter-spacing: 0;
+      white-space: normal;
+    }
+
+    main {
+      width: min(1220px, calc(100vw - 48px));
+      margin: 0 auto;
+    }
+
+    .section {
+      padding: 78px 0 0;
+    }
+
+    .section-head {
+      margin-bottom: 34px;
+    }
+
+    .section-head h2 {
+      margin-bottom: 10px;
+      font-size: clamp(30px, 3.6vw, 44px);
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .section-head p {
+      max-width: 680px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .tool-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
+      gap: 56px;
+      align-items: center;
+      padding: 56px;
+      background: var(--surface);
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 32px;
+      margin-bottom: 22px;
+      padding: 0 18px;
+      border-radius: 999px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .tool-card h2 {
+      margin-bottom: 18px;
+      font-size: clamp(34px, 4vw, 52px);
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .tool-card p {
+      max-width: 650px;
+      margin-bottom: 28px;
+      color: #596576;
+      font-size: 19px;
+    }
+
+    .tool-meta {
+      display: inline-block;
+      margin-left: 16px;
+      color: var(--soft-text);
+      font-size: 14px;
+      font-weight: 650;
+      vertical-align: middle;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      padding: 28px;
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .feature {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 14px;
+      align-items: start;
+      min-height: 84px;
+      padding: 14px;
+      background: #fff;
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+    }
+
+    .feature-number {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 850;
+    }
+
+    .feature strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 17px;
+    }
+
+    .feature span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer {
+      padding: 44px 0 38px;
+    }
+
+    @media (max-width: 980px) {
+      .topbar {
+        padding: 0 24px;
+      }
+
+      .nav {
+        display: none;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+        min-height: auto;
+        padding: 76px 24px 64px;
+      }
+
+      .hero::before,
+      .hero::after {
+        opacity: 0.24;
+        right: -140px;
+      }
+
+      main {
+        width: calc(100vw - 32px);
+      }
+
+      .tool-card {
+        grid-template-columns: 1fr;
+        padding: 32px;
+      }
+
+    }
+
+    @media (max-width: 640px) {
+      .topbar {
+        min-height: 66px;
+        gap: 14px;
+      }
+
+      .brand {
+        font-size: 17px;
+      }
+
+      .auth-actions {
+        display: none;
+      }
+
+      h1 {
+        font-size: 42px;
+        white-space: normal;
+      }
+
+      .footer {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .button {
+        width: 100%;
+      }
+
+      .tool-card {
+        padding: 24px;
+      }
+
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .tool-meta {
+        display: block;
+        margin: 14px 0 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#">
+      <img class="brand-mark" src="assets/qingke-logo-icon.png" alt="" aria-hidden="true">
+      <span>轻课</span>
+    </a>
+    <nav class="nav" aria-label="页面导航">
+      <a href="#tools">工具</a>
+      <a href="mailto:feedback@example.com">反馈建议</a>
+    </nav>
+    <div class="auth-actions" aria-label="账号操作">
+      <a class="button ghost" href="#">登录</a>
+      <a class="button primary small" href="#">注册</a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-content">
+      <h1>老师的日常工作<br>从这里变轻</h1>
+      <p class="eyebrow">面向老师的效率工具集合，把重复琐事整理得更清楚。</p>
+    </div>
+  </section>
+
+  <main>
+    <section class="section" id="tools">
+      <div class="section-head">
+        <h2>当前可用工具</h2>
+      </div>
+
+      <article class="tool-card">
+        <div>
+          <span class="status">已上线</span>
+          <h2>课程排课表</h2>
+          <p>支持按月份查看课表，创建班级，设置固定每周上课、临时停课、指定日期范围停课，并可打印或保存为 PDF。适合平时班、寒暑假班和短期集训。</p>
+          <a class="button primary" href="summer_schedule_2026_website_imported.html">排课助手</a>
+        </div>
+
+        <div class="feature-grid" aria-label="排课工具功能概览">
+          <div class="feature">
+            <span class="feature-number">01</span>
+            <div><strong>月度课表</strong><span>按月份查看和打印</span></div>
+          </div>
+          <div class="feature">
+            <span class="feature-number">02</span>
+            <div><strong>每周上课</strong><span>一次设置，自动延续</span></div>
+          </div>
+          <div class="feature">
+            <span class="feature-number">03</span>
+            <div><strong>停课恢复</strong><span>处理临时调整</span></div>
+          </div>
+          <div class="feature">
+            <span class="feature-number">04</span>
+            <div><strong>班级管理</strong><span>维护课程与时间</span></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <footer class="footer" aria-hidden="true"></footer>
+  </main>
+</body>
+</html>

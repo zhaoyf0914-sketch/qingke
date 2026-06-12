@@ -1,0 +1,2521 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>课程排课表</title>
+  <style>
+    :root {
+      --ink: #1d1d1f;
+      --muted: #6e6e73;
+      --line: #d2d2d7;
+      --soft: #f5f5f7;
+      --accent: #0071e3;
+      --accent-soft: #f1f7ff;
+      --course-orange: #c75000;
+      --course-orange-soft: #fff3e8;
+      --weekend: #0066cc;
+      --page: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f5f5f7;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      padding: 12px 18px;
+      background: rgba(251, 251, 253, 0.82);
+      backdrop-filter: saturate(180%) blur(18px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .toolbar button,
+    .secondary-button,
+    .primary-button {
+      border: 0;
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .toolbar button,
+    .primary-button {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+    }
+
+    .secondary-button {
+      background: #e8e8ed;
+      color: var(--ink);
+    }
+
+    .toolbar span {
+      align-self: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .month-tabs {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 4px;
+      padding: 3px;
+      border-radius: 999px;
+      background: #e8e8ed;
+    }
+
+    .month-tab,
+    .month-select {
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px 12px;
+    }
+
+    .month-select {
+      background: #fff;
+      outline: 0;
+    }
+
+    .toolbar .month-tab {
+      box-shadow: none;
+    }
+
+    .month-tab:disabled {
+      color: #a1a1a6;
+      cursor: not-allowed;
+    }
+
+    .toast {
+      position: fixed;
+      top: 72px;
+      left: 50%;
+      z-index: 30;
+      transform: translateX(-50%) translateY(-8px);
+      opacity: 0;
+      pointer-events: none;
+      border-radius: 999px;
+      background: rgba(29, 29, 31, 0.92);
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+      font-size: 14px;
+      font-weight: 700;
+      padding: 10px 18px;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    main {
+      width: min(1160px, calc(100vw - 36px));
+      margin: 28px auto 44px;
+      display: grid;
+      gap: 28px;
+    }
+
+    .view[hidden] {
+      display: none;
+    }
+
+    .class-page {
+      width: min(920px, calc(100vw - 36px));
+      margin: 28px auto 44px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .class-panel {
+      background: var(--page);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 24px;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
+      padding: 28px;
+    }
+
+    .class-page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .class-page h2 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .class-page p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .class-form {
+      display: grid;
+      grid-template-columns: 0.8fr 1.6fr auto;
+      align-items: end;
+      gap: 10px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .class-form input {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      background: #f5f5f7;
+      color: var(--ink);
+      font: inherit;
+      outline: 0;
+      padding: 10px 12px;
+    }
+
+    .class-form input:focus {
+      background: #fff;
+      box-shadow: inset 0 0 0 2px var(--accent);
+    }
+
+    .session-field {
+      grid-column: 1 / -1;
+    }
+
+    .session-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .session-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr) auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .weekly-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .weekly-toggle input {
+      width: auto;
+      margin: 0;
+    }
+
+    .add-session,
+    .remove-session {
+      border: 0;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .add-session {
+      justify-self: start;
+      margin-top: 8px;
+      background: transparent;
+      color: var(--accent);
+      padding: 6px 0;
+    }
+
+    .remove-session {
+      width: 30px;
+      height: 30px;
+      background: #f5f5f7;
+      color: #d70015;
+    }
+
+    .class-library {
+      display: grid;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .class-library-tools {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      margin-top: 22px;
+    }
+
+    .class-search {
+      width: 100%;
+      border: 0;
+      border-radius: 999px;
+      background: #f5f5f7;
+      color: var(--ink);
+      font: inherit;
+      outline: 0;
+      padding: 10px 14px;
+    }
+
+    .class-count {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .class-card {
+      display: grid;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid #ededf0;
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .class-card-main {
+      display: grid;
+      grid-template-columns: minmax(70px, 0.7fr) minmax(0, 1.5fr) auto;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .class-id-pill {
+      color: var(--course-orange);
+      background: var(--course-orange-soft);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-weight: 750;
+      text-align: center;
+    }
+
+    .class-name {
+      color: var(--course-orange);
+      font-weight: 700;
+    }
+
+    .class-time {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .class-session-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .class-session-row {
+      display: grid;
+      grid-template-columns: minmax(170px, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 9px;
+      border-radius: 12px;
+      background: #fafafa;
+    }
+
+    .class-session-row.session-conflict {
+      background: #fff1f0;
+      box-shadow: inset 0 0 0 1px #ff3b30;
+    }
+
+    .class-session-row.session-paused {
+      background: #fff7ed;
+      box-shadow: inset 0 0 0 1px #ffcc99;
+    }
+
+    .session-main {
+      display: grid;
+      gap: 6px;
+    }
+
+    .session-controls,
+    .session-cancelled {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .session-controls {
+      display: grid;
+      justify-items: start;
+    }
+
+    .session-control-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .session-controls input,
+    .session-cancelled input,
+    .session-cancelled select {
+      border: 0;
+      border-radius: 999px;
+      background: #f1f1f3;
+      color: var(--ink);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 650;
+      outline: 0;
+      padding: 7px 9px;
+    }
+
+    .session-controls input {
+      width: 134px;
+    }
+
+    .session-cancelled select {
+      min-width: 190px;
+    }
+
+    .session-action {
+      border: 0;
+      border-radius: 999px;
+      background: #f5f5f7;
+      color: #b54708;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 9px;
+      white-space: nowrap;
+    }
+
+    .session-action.restore {
+      color: var(--accent);
+    }
+
+    .session-action:disabled,
+    .session-controls input:disabled,
+    .session-cancelled input:disabled,
+    .session-cancelled select:disabled {
+      color: #a1a1a6;
+      cursor: not-allowed;
+    }
+
+    .session-conflict-text {
+      margin-top: 4px;
+      color: #bf1d1d;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .edit-class,
+    .delete-class {
+      border: 0;
+      border-radius: 999px;
+      background: #f5f5f7;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 650;
+      padding: 7px 10px;
+    }
+
+    .edit-class {
+      color: var(--accent);
+    }
+
+    .delete-class {
+      color: #d70015;
+    }
+
+    .schedule-template {
+      border: 0;
+      border-radius: 999px;
+      background: var(--accent);
+      color: white;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 650;
+      padding: 8px 10px;
+      white-space: nowrap;
+    }
+
+    .schedule-template:disabled {
+      background: #d2d2d7;
+      cursor: not-allowed;
+    }
+
+    .schedule-template.just-scheduled {
+      background: #34c759;
+    }
+
+    .empty-library {
+      color: var(--muted);
+      border: 1px dashed #d2d2d7;
+      border-radius: 14px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .sheet {
+      background: var(--page);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 24px;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
+      padding: 28px;
+      page-break-after: always;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sheet::before {
+      display: none;
+    }
+
+    .sheet > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .sheet:last-child {
+      page-break-after: auto;
+    }
+
+    .sheet[hidden] {
+      display: none;
+    }
+
+    .sheet-header {
+      display: block;
+      align-items: end;
+      margin-bottom: 22px;
+      padding: 4px 2px 2px;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .computer-badge {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #2c2c2e 0%, #111113 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+        0 8px 18px rgba(0, 0, 0, 0.14);
+    }
+
+    .computer-icon {
+      width: 27px;
+      height: 22px;
+      position: relative;
+    }
+
+    .computer-icon::before {
+      content: "";
+      position: absolute;
+      left: 2px;
+      top: 1px;
+      width: 23px;
+      height: 15px;
+      border: 2px solid #f5f5f7;
+      border-radius: 4px;
+      background:
+        linear-gradient(135deg, rgba(0, 113, 227, 0.72), transparent 48%),
+        #1d1d1f;
+    }
+
+    .computer-icon::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 1px;
+      width: 27px;
+      height: 4px;
+      border-radius: 999px;
+      background: #f5f5f7;
+      box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+    }
+
+    .computer-shine {
+      position: absolute;
+      left: 8px;
+      top: 6px;
+      width: 6px;
+      height: 2px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 34px;
+      line-height: 1.08;
+      letter-spacing: 0;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .weekday-head,
+    .day {
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .weekday-head:nth-child(7n),
+    .day:nth-child(7n) {
+      border-right: 0;
+    }
+
+    .weekday-head {
+      background: #f5f5f7;
+      color: #424245;
+      padding: 12px 8px 10px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      position: relative;
+    }
+
+    .weekday-head::after {
+      display: none;
+    }
+
+    .day {
+      min-height: 154px;
+      background: #fff;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .day.empty {
+      background: #fafafa;
+    }
+
+    .day:nth-last-child(-n + 7) {
+      border-bottom: 0;
+    }
+
+    .day.has-conflict {
+      background: #fff8f7;
+      box-shadow: inset 0 0 0 2px #ff3b30;
+    }
+
+    .date-line {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 6px;
+      min-height: 26px;
+    }
+
+    .date {
+      font-size: 23px;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--ink);
+    }
+
+    .weekday {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #f5f5f7;
+    }
+
+    .weekend .date,
+    .weekend .weekday {
+      color: var(--weekend);
+    }
+
+    .weekend {
+      background: #fbfdff;
+    }
+
+    .course-list {
+      flex: 1;
+      display: grid;
+      gap: 6px;
+      border-top: 1px solid #e5e5ea;
+      padding-top: 7px;
+    }
+
+    .course-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 5px;
+      font-size: 13px;
+      position: relative;
+      padding: 7px;
+      border: 1px solid #ededf0;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .scheduled-course {
+      display: grid;
+      gap: 4px;
+      padding: 8px;
+      border: 1px solid #ffe1c2;
+      border-radius: 12px;
+      background: var(--course-orange-soft);
+      color: var(--course-orange);
+    }
+
+    .scheduled-course.row-conflict {
+      background: #fff1f0;
+      border-color: #ff3b30;
+      box-shadow: inset 0 0 0 1px #ff3b30;
+    }
+
+    .scheduled-course-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .scheduled-id {
+      font-size: 12px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .scheduled-time {
+      color: #9a4a05;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .scheduled-name {
+      color: var(--course-orange);
+      font-size: 12px;
+      font-weight: 750;
+      line-height: 1.18;
+      overflow-wrap: anywhere;
+    }
+
+    .course-row-tools {
+      display: flex;
+      position: absolute;
+      right: 5px;
+      top: 5px;
+      gap: 3px;
+      opacity: 0.58;
+      transition: opacity 0.16s ease;
+    }
+
+    .course-row:hover .course-row-tools,
+    .course-row:focus-within .course-row-tools {
+      opacity: 1;
+    }
+
+    .row-tool {
+      border: 0;
+      border-radius: 999px;
+      background: #f5f5f7;
+      color: #424245;
+      cursor: pointer;
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .row-tool:hover {
+      background: #e8f2ff;
+      color: var(--accent);
+    }
+
+    .row-tool:disabled {
+      cursor: not-allowed;
+      opacity: 0.38;
+    }
+
+    .course-row.just-pasted .course-input,
+    .course-row.just-pasted .class-id-input,
+    .course-row.just-pasted .time-input {
+      box-shadow: inset 0 0 0 2px #34c759;
+    }
+
+    .course-detail-row {
+      display: grid;
+      grid-template-columns: minmax(44px, 0.62fr) minmax(0, 1.38fr);
+      gap: 4px;
+    }
+
+    .time-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 4px;
+      padding-right: 50px;
+    }
+
+    .time-row span {
+      color: #a1a1a6;
+      font-size: 11px;
+      line-height: 1;
+    }
+
+    .course-input,
+    .class-id-input,
+    .time-input {
+      width: 100%;
+      min-width: 0;
+      border: 0;
+      border-radius: 7px;
+      background: #f5f5f7;
+      color: var(--ink);
+      font: inherit;
+      outline: 0;
+    }
+
+    .class-id-input,
+    .course-input {
+      color: var(--course-orange);
+      background: var(--course-orange-soft);
+      font-weight: 650;
+    }
+
+    .time-input {
+      padding: 4px 5px;
+      font-size: 11px;
+      line-height: 1;
+    }
+
+    .course-input {
+      padding: 5px 7px;
+      font-size: 12px;
+      line-height: 1.1;
+    }
+
+    .class-id-input {
+      padding: 5px 6px;
+      font-size: 12px;
+      line-height: 1.1;
+      text-transform: uppercase;
+    }
+
+    .course-input:focus,
+    .class-id-input:focus,
+    .time-input:focus {
+      background: #fff;
+      box-shadow: inset 0 0 0 2px var(--accent);
+    }
+
+    .row-conflict .course-input,
+    .row-conflict .class-id-input,
+    .row-conflict .time-input {
+      background: #fff1f0;
+      box-shadow: inset 0 0 0 1px #ff3b30;
+    }
+
+    .course-input::placeholder,
+    .class-id-input::placeholder,
+    .time-input::placeholder {
+      color: #a1a1a6;
+      font-weight: 500;
+    }
+
+    .course-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 6px;
+      margin-top: 1px;
+    }
+
+    .add-course,
+    .paste-day {
+      width: 100%;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 4px;
+      cursor: pointer;
+    }
+
+    .paste-day:disabled {
+      color: #a1a1a6;
+      cursor: not-allowed;
+    }
+
+    .conflict-message {
+      display: none;
+      color: #bf1d1d;
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.25;
+    }
+
+    .day.has-conflict .conflict-message {
+      display: block;
+    }
+
+    @media (max-width: 820px) {
+      main {
+        width: calc(100vw - 18px);
+        margin-top: 12px;
+      }
+
+      .sheet {
+        padding: 14px;
+      }
+
+      .class-page {
+        width: calc(100vw - 18px);
+        margin-top: 12px;
+      }
+
+      .class-panel {
+        padding: 18px;
+      }
+
+      .class-page-header,
+      .class-form,
+      .class-card {
+        grid-template-columns: 1fr;
+      }
+
+      .class-page-header {
+        align-items: stretch;
+      }
+
+      .sheet-header {
+        padding: 12px;
+      }
+
+      .title-row {
+        gap: 10px;
+      }
+
+      .computer-badge {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+      }
+
+      .computer-icon {
+        transform: scale(0.82);
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .day {
+        min-height: 140px;
+        padding: 7px;
+      }
+
+      .date {
+        font-size: 18px;
+      }
+
+      .weekday,
+      .course-input,
+      .class-id-input,
+      .time-input,
+      .row-tool,
+      .conflict-message {
+        font-size: 12px;
+      }
+    }
+
+    @page {
+      size: A4 landscape;
+      margin: 9mm;
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .toolbar {
+        display: none;
+      }
+
+      .class-page {
+        display: none;
+      }
+
+      main {
+        width: auto;
+        margin: 0;
+        display: block;
+      }
+
+      .sheet {
+        border: 0;
+        box-shadow: none;
+        padding: 0;
+        overflow: visible;
+      }
+
+      .sheet[hidden] {
+        display: none;
+      }
+
+      .sheet::before {
+        display: none;
+      }
+
+      .sheet-header {
+        margin-bottom: 10px;
+        background: transparent;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .computer-badge {
+        width: 38px;
+        height: 38px;
+      }
+
+      .computer-icon {
+        transform: scale(0.86);
+      }
+
+      .weekday-head {
+        padding: 7px 6px;
+      }
+
+      .day {
+        min-height: 128px;
+        break-inside: avoid;
+      }
+
+      .course-input,
+      .class-id-input,
+      .time-input {
+        background: transparent;
+        border-radius: 0;
+        border-bottom: 1px solid #eeeeef;
+        padding-left: 0;
+        padding-right: 0;
+      }
+
+      .add-course,
+      .paste-day,
+      .course-row-tools,
+      .toast {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button type="button" id="printButton">打印 / 保存为 PDF</button>
+    <button type="button" id="openClassPage">班级管理</button>
+    <div id="monthTabs" class="month-tabs" aria-label="选择月份"></div>
+    <span id="scheduleStatus">建议横向 A4 打印；每个月单独一页。</span>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <main id="sheets" class="view" aria-label="从 2026 年 6 月开始的课程排课表"></main>
+
+  <section id="classPage" class="class-page view" hidden aria-label="班级管理页面">
+    <div class="class-panel">
+      <div class="class-page-header">
+        <div>
+          <h2>班级管理</h2>
+          <p>在这里创建班级，填写班级 ID、课程名称和上课时间；保存后可将课程排入月份表。</p>
+        </div>
+        <button class="secondary-button" type="button" id="backToSchedule">返回排课表</button>
+      </div>
+
+      <form id="classForm" class="class-form">
+        <div class="field">
+          <label for="classIdField">班级 ID</label>
+          <input id="classIdField" name="classId" type="text" placeholder="A01" required>
+        </div>
+        <div class="field">
+          <label for="classNameField">课程名称</label>
+          <input id="classNameField" name="course" type="text" placeholder="Scratch 启蒙" required>
+        </div>
+        <div class="field session-field">
+          <label>上课时间</label>
+          <div id="sessionList" class="session-list"></div>
+          <button class="add-session" type="button" id="addSessionTime">+ 添加上课时间</button>
+        </div>
+        <div class="form-actions">
+          <button class="primary-button" type="submit" id="saveClassButton">保存</button>
+          <button class="secondary-button" type="button" id="cancelEditClass" hidden>取消编辑</button>
+        </div>
+      </form>
+
+      <div class="class-library-tools">
+        <input id="classSearch" class="class-search" type="search" placeholder="搜索班级 ID 或课程名称">
+        <div id="classCount" class="class-count"></div>
+      </div>
+      <div id="classLibrary" class="class-library" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <script>
+    const scheduleStart = "2026-06-01";
+    const scheduleStartMonth = "2026-06";
+
+    function makeMonthKey(year, month) {
+      return `${year}-${String(month + 1).padStart(2, "0")}`;
+    }
+
+    function monthFromKey(key) {
+      const [year, month] = String(key || scheduleStartMonth).split("-").map(Number);
+      const safeYear = Number.isFinite(year) ? year : 2026;
+      const safeMonth = Number.isFinite(month) ? month - 1 : 5;
+      return {
+        year: safeYear,
+        month: safeMonth,
+        key: makeMonthKey(safeYear, safeMonth),
+        label: `${safeYear} 年 ${safeMonth + 1} 月`,
+        title: `${safeYear} 年 ${safeMonth + 1} 月课程排课表`,
+      };
+    }
+
+    function addMonthsToKey(key, offset) {
+      const month = monthFromKey(key);
+      const date = new Date(month.year, month.month + offset, 1);
+      return makeMonthKey(date.getFullYear(), date.getMonth());
+    }
+
+    function monthEndKey(key) {
+      const month = monthFromKey(key);
+      const lastDay = new Date(month.year, month.month + 1, 0).getDate();
+      return dateKey(month.year, month.month, lastDay);
+    }
+
+    const weekNames = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"];
+    const nativeWeekday = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+    const sheets = document.querySelector("#sheets");
+    const monthTabs = document.querySelector("#monthTabs");
+    const classPage = document.querySelector("#classPage");
+    const printButton = document.querySelector("#printButton");
+    const openClassPageButton = document.querySelector("#openClassPage");
+    const backToScheduleButton = document.querySelector("#backToSchedule");
+    const classForm = document.querySelector("#classForm");
+    const classLibrary = document.querySelector("#classLibrary");
+    const classIdField = document.querySelector("#classIdField");
+    const sessionList = document.querySelector("#sessionList");
+    const addSessionTimeButton = document.querySelector("#addSessionTime");
+    const saveClassButton = document.querySelector("#saveClassButton");
+    const cancelEditClassButton = document.querySelector("#cancelEditClass");
+    const classSearch = document.querySelector("#classSearch");
+    const classCount = document.querySelector("#classCount");
+    const scheduleStatus = document.querySelector("#scheduleStatus");
+    const toast = document.querySelector("#toast");
+    const storageKey = "summer-schedule-2026";
+    const scheduleResetKey = "summer-schedule-2026-clear-residual-v2";
+    const weeklyDateFixKey = "summer-schedule-2026-weekly-date-fix-v1";
+    const classStorageKey = "summer-schedule-2026-classes";
+    let copiedCourse = null;
+    let classTemplates = [];
+    let editingClassIndex = null;
+    let activeMonthKey = scheduleStartMonth;
+
+    function mondayFirstIndex(date) {
+      return (date.getDay() + 6) % 7;
+    }
+
+    function dateKey(year, month, day) {
+      return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    }
+
+    function makeId(prefix = "id") {
+      return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    function sessionRowTemplate() {
+      return `
+        <div class="session-row">
+          <input class="session-date" type="date" min="${scheduleStart}" aria-label="上课日期" required>
+          <input class="session-start" type="time" aria-label="开始时间" required>
+          <input class="session-end" type="time" aria-label="结束时间" required>
+          <label class="weekly-toggle"><input class="session-weekly" type="checkbox">每周</label>
+          <button class="remove-session" type="button" title="删除这个时间段" aria-label="删除这个时间段">×</button>
+        </div>
+      `;
+    }
+
+    function addSessionField(data = {}) {
+      const holder = document.createElement("div");
+      holder.innerHTML = sessionRowTemplate().trim();
+      const row = holder.firstElementChild;
+      row.dataset.sessionId = data.sessionId || makeId("session");
+      row.querySelector(".session-date").value = data.date || "";
+      row.querySelector(".session-start").value = data.start || "";
+      row.querySelector(".session-end").value = data.end || "";
+      row.querySelector(".session-weekly").checked = Boolean(data.weekly);
+      row.dataset.cancelledDates = JSON.stringify(Array.isArray(data.cancelledDates) ? data.cancelledDates : []);
+      row.dataset.cancelledRanges = JSON.stringify(Array.isArray(data.cancelledRanges) ? data.cancelledRanges : []);
+      row.dataset.pausedFrom = data.pausedFrom || "";
+      row.dataset.paused = data.paused ? "true" : "";
+      sessionList.appendChild(row);
+      return row;
+    }
+
+    function collectSessions() {
+      return Array.from(sessionList.querySelectorAll(".session-row"))
+        .map((row) => ({
+          sessionId: row.dataset.sessionId || makeId("session"),
+          date: row.querySelector(".session-date").value,
+          start: row.querySelector(".session-start").value,
+          end: row.querySelector(".session-end").value,
+          weekly: row.querySelector(".session-weekly").checked,
+          cancelledDates: JSON.parse(row.dataset.cancelledDates || "[]"),
+          cancelledRanges: JSON.parse(row.dataset.cancelledRanges || "[]"),
+          pausedFrom: row.dataset.pausedFrom || "",
+          paused: row.dataset.paused === "true",
+        }))
+        .filter((session) => session.date || session.start || session.end);
+    }
+
+    function getLastSessionData() {
+      const rows = Array.from(sessionList.querySelectorAll(".session-row"));
+      const lastRow = rows[rows.length - 1];
+      if (!lastRow) return {};
+
+      return {
+        date: lastRow.querySelector(".session-date").value,
+        start: lastRow.querySelector(".session-start").value,
+        end: lastRow.querySelector(".session-end").value,
+        weekly: lastRow.querySelector(".session-weekly").checked,
+      };
+    }
+
+    function resetClassForm() {
+      classForm.reset();
+      sessionList.innerHTML = "";
+      addSessionField();
+      editingClassIndex = null;
+      saveClassButton.textContent = "保存";
+      cancelEditClassButton.hidden = true;
+      classIdField.focus();
+    }
+
+    function fillClassForm(item) {
+      const template = normalizeClassTemplate(item);
+      classIdField.value = template.classId;
+      classForm.elements.course.value = template.course;
+      sessionList.innerHTML = "";
+      (template.sessions.length ? template.sessions : [{}]).forEach(addSessionField);
+      saveClassButton.textContent = "更新";
+      cancelEditClassButton.hidden = false;
+      classIdField.focus();
+    }
+
+    function courseRowTemplate() {
+      return `
+        <div class="course-row">
+          <div class="course-row-tools" aria-label="课程复制粘贴操作">
+            <button class="row-tool copy-course" type="button" title="复制这条课程" aria-label="复制这条课程">⧉</button>
+            <button class="row-tool paste-course" type="button" title="粘贴到这条课程" aria-label="粘贴到这条课程">↧</button>
+          </div>
+          <div class="time-row">
+            <input class="time-input start-time" type="time" aria-label="开始时间">
+            <span>-</span>
+            <input class="time-input end-time" type="time" aria-label="结束时间">
+          </div>
+          <div class="course-detail-row">
+            <input class="class-id-input" type="text" placeholder="ID" aria-label="班级 ID">
+            <input class="course-input" type="text" placeholder="课程名称" aria-label="课程名称">
+          </div>
+        </div>
+      `;
+    }
+
+    function addCourseRow(courseList, data = {}) {
+      const holder = document.createElement("div");
+      holder.innerHTML = courseRowTemplate().trim();
+      const row = holder.firstElementChild;
+      setCourseData(row, data);
+      courseList.insertBefore(row, courseList.querySelector(".conflict-message"));
+      updatePasteButtons();
+      return row;
+    }
+
+    function getCourseData(row) {
+      return {
+        start: row.querySelector(".start-time").value,
+        end: row.querySelector(".end-time").value,
+        classId: row.querySelector(".class-id-input").value,
+        course: row.querySelector(".course-input").value,
+      };
+    }
+
+    function setCourseData(row, data) {
+      row.querySelector(".start-time").value = data.start || "";
+      row.querySelector(".end-time").value = data.end || "";
+      row.querySelector(".class-id-input").value = data.classId || data.id || "";
+      row.querySelector(".course-input").value = data.course || "";
+    }
+
+    function normalizeCourse(data = {}) {
+      return {
+        templateId: data.templateId || "",
+        sessionId: data.sessionId || "",
+        start: data.start || "",
+        end: data.end || "",
+        classId: data.classId || data.id || "",
+        course: data.course || "",
+        sourceDate: data.sourceDate || "",
+        weekly: Boolean(data.weekly),
+      };
+    }
+
+    function normalizeClassTemplate(data = {}) {
+      const legacySession = (data.start || data.end) ? [{ start: data.start || "", end: data.end || "" }] : [];
+      const sessions = Array.isArray(data.sessions) ? data.sessions : legacySession;
+      return {
+        templateId: data.templateId || makeId("class"),
+        classId: data.classId || data.id || "",
+        course: data.course || "",
+        sessions: sessions
+          .map((session) => ({
+            sessionId: session.sessionId || makeId("session"),
+            date: session.date || "",
+            start: session.start || "",
+            end: session.end || "",
+            weekly: Boolean(session.weekly),
+            cancelledDates: Array.from(new Set(Array.isArray(session.cancelledDates) ? session.cancelledDates : []))
+              .filter((date) => typeof date === "string" && date >= scheduleStart)
+              .sort(),
+            cancelledRanges: normalizeCancelledRanges(session.cancelledRanges),
+            pausedFrom: session.pausedFrom || (session.paused ? nextSchedulableDate(session) : ""),
+            paused: Boolean(session.paused || session.pausedFrom),
+            scheduled: Boolean(session.scheduled),
+          }))
+          .filter((session) => session.date || session.start || session.end),
+      };
+    }
+
+    function courseFromTemplate(template, session) {
+      return normalizeCourse({
+        templateId: template.templateId,
+        sessionId: session.sessionId,
+        classId: template.classId,
+        course: template.course,
+        start: session.start,
+        end: session.end,
+      });
+    }
+
+    function addDays(dateString, days) {
+      const [year, month, day] = dateString.split("-").map(Number);
+      const date = new Date(Date.UTC(year, month - 1, day + days));
+      const nextYear = date.getUTCFullYear();
+      const nextMonth = String(date.getUTCMonth() + 1).padStart(2, "0");
+      const nextDay = String(date.getUTCDate()).padStart(2, "0");
+      return `${nextYear}-${nextMonth}-${nextDay}`;
+    }
+
+    function todayKey() {
+      const now = new Date();
+      return dateKey(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+
+    function clampScheduleDate(date) {
+      if (!date || date < scheduleStart) return scheduleStart;
+      return date;
+    }
+
+    function nextSchedulableDate(session = {}) {
+      const startDate = session.date || scheduleStart;
+      return clampScheduleDate(todayKey() > startDate ? todayKey() : startDate);
+    }
+
+    function normalizeCancelledRanges(ranges) {
+      if (!Array.isArray(ranges)) return [];
+      return ranges
+        .filter((range) => range?.start || range?.end)
+        .map((range) => ({
+          start: clampScheduleDate(range.start || range.end),
+          end: clampScheduleDate(range.end || range.start),
+        }))
+        .map((range) => range.start > range.end ? { start: range.end, end: range.start } : range)
+        .filter((range) => range.start && range.end)
+        .sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end));
+    }
+
+    function isSessionDateCancelled(session, date) {
+      if (!date) return false;
+      if (session.pausedFrom && date >= session.pausedFrom) return true;
+      if ((session.cancelledDates || []).includes(date)) return true;
+      return (session.cancelledRanges || []).some((range) => date >= range.start && date <= range.end);
+    }
+
+    function expandSessionDates(session, endDate = monthEndKey(activeMonthKey)) {
+      if (!session.date) return [];
+      if (!session.weekly) return isSessionDateCancelled(session, session.date) ? [] : [session.date];
+
+      const dates = [];
+      for (let date = session.date; date <= endDate; date = addDays(date, 7)) {
+        if (date >= scheduleStart && !isSessionDateCancelled(session, date)) dates.push(date);
+      }
+      return dates;
+    }
+
+    function expandSessionDatesForControls(session, endDate = monthEndKey(activeMonthKey)) {
+      if (!session.date) return [];
+      if (!session.weekly) return [session.date];
+
+      const dates = [];
+      for (let date = session.date; date <= endDate; date = addDays(date, 7)) {
+        if (date >= scheduleStart) dates.push(date);
+      }
+      return dates;
+    }
+
+    function courseKey(data = {}) {
+      const item = normalizeCourse(data);
+      return [item.classId, item.course, item.start, item.end].join("||");
+    }
+
+    function isCourseFilled(data) {
+      return Boolean(data.start || data.end || data.classId || data.id || data.course);
+    }
+
+    function isTemplateFilled(data) {
+      const item = normalizeClassTemplate(data);
+      return Boolean(item.classId || item.course || item.sessions.length);
+    }
+
+    function hasCompleteSession(data) {
+      const item = normalizeClassTemplate(data);
+      return item.sessions.some((session) => session.date && session.start && session.end);
+    }
+
+    function resetOldScheduleOnce() {
+      if (localStorage.getItem(scheduleResetKey) === "done") return;
+      localStorage.removeItem(storageKey);
+      localStorage.setItem(scheduleResetKey, "done");
+    }
+
+    function showScheduleView() {
+      sheets.hidden = false;
+      classPage.hidden = true;
+      refreshConflictStatus();
+    }
+
+    function showClassView() {
+      sheets.hidden = true;
+      classPage.hidden = false;
+      scheduleStatus.textContent = "在班级管理里创建、编辑和排入课程。";
+      classIdField.focus();
+    }
+
+    function updatePasteButtons() {
+      document.querySelectorAll(".paste-course").forEach((button) => {
+        button.disabled = !copiedCourse;
+      });
+      document.querySelectorAll(".paste-day").forEach((button) => {
+        button.disabled = !copiedCourse;
+      });
+    }
+
+    function showStatusOnce(text) {
+      const conflictCount = document.querySelectorAll(".day.has-conflict").length;
+      scheduleStatus.textContent = text;
+      window.clearTimeout(showStatusOnce.timer);
+      showStatusOnce.timer = window.setTimeout(() => {
+        scheduleStatus.textContent = conflictCount
+          ? `发现 ${conflictCount} 天有时间冲突，请检查红色日期格。`
+          : "建议横向 A4 打印；每个月单独一页。";
+      }, 1800);
+    }
+
+    function showToast(text) {
+      toast.textContent = text;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        toast.classList.remove("show");
+      }, 1700);
+    }
+
+    function printCurrentMonth() {
+      showScheduleView();
+      renderSchedule();
+      const sheet = document.querySelector(".sheet");
+      if (!sheet) {
+        scheduleStatus.textContent = "当前没有可打印的月份。";
+        showToast("没有可打印内容");
+        return;
+      }
+
+      document.querySelector("#printFrame")?.remove();
+      const frame = document.createElement("iframe");
+      frame.id = "printFrame";
+      frame.title = "打印当前月份";
+      frame.style.position = "fixed";
+      frame.style.right = "0";
+      frame.style.bottom = "0";
+      frame.style.width = "0";
+      frame.style.height = "0";
+      frame.style.border = "0";
+      frame.style.opacity = "0";
+      document.body.appendChild(frame);
+
+      const styles = Array.from(document.querySelectorAll("style"))
+        .map((style) => style.textContent)
+        .join("\n");
+      const month = monthFromKey(activeMonthKey);
+      const printDocument = frame.contentDocument || frame.contentWindow.document;
+      printDocument.open();
+      printDocument.write(`<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>${escapeHtml(month.title)}</title>
+  <style>
+    ${styles}
+    body {
+      background: white !important;
+    }
+
+    .toolbar,
+    .class-page,
+    .toast {
+      display: none !important;
+    }
+
+    main {
+      width: auto !important;
+      margin: 0 !important;
+      display: block !important;
+    }
+
+    .sheet {
+      border: 0 !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      overflow: visible !important;
+      page-break-after: auto !important;
+    }
+
+    .sheet::before {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <main>${sheet.outerHTML}</main>
+</body>
+</html>`);
+      printDocument.close();
+
+      let didPrint = false;
+      const runPrint = () => {
+        if (didPrint) return;
+        didPrint = true;
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+        scheduleStatus.textContent = "已打开打印窗口，可在系统打印对话框中选择“保存为 PDF”。";
+        showToast("已打开打印窗口");
+        window.setTimeout(() => frame.remove(), 1200);
+      };
+
+      frame.onload = runPrint;
+      window.setTimeout(runPrint, 300);
+    }
+
+    function flashScheduleButton(button) {
+      const originalText = button.textContent;
+      button.textContent = "已排入";
+      button.classList.add("just-scheduled");
+      window.clearTimeout(button.flashTimer);
+      button.flashTimer = window.setTimeout(() => {
+        button.textContent = originalText;
+        button.classList.remove("just-scheduled");
+      }, 1200);
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;",
+      }[char]));
+    }
+
+    function loadClassTemplates() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(classStorageKey) || "[]");
+        classTemplates = Array.isArray(saved)
+          ? saved.map(normalizeClassTemplate).filter(isTemplateFilled)
+          : [];
+        saveClassTemplates();
+      } catch {
+        classTemplates = [];
+      }
+    }
+
+    function saveClassTemplates() {
+      localStorage.setItem(classStorageKey, JSON.stringify(classTemplates));
+    }
+
+    function markScheduledSessionsFromSchedule() {
+      const schedule = getSchedule();
+      const scheduledKeys = new Set();
+
+      Object.values(schedule).forEach((rows) => {
+        if (!Array.isArray(rows)) return;
+        rows.filter(isCourseFilled).forEach((row) => {
+          const item = normalizeCourse(row);
+          if (item.templateId && item.sessionId) {
+            scheduledKeys.add(`${item.templateId}||${item.sessionId}`);
+          }
+        });
+      });
+
+      let changed = false;
+      classTemplates = classTemplates.map((rawTemplate) => {
+        const template = normalizeClassTemplate(rawTemplate);
+        template.sessions = template.sessions.map((session) => {
+          if (scheduledKeys.has(`${template.templateId}||${session.sessionId}`) && !session.scheduled) {
+            changed = true;
+            return { ...session, scheduled: true };
+          }
+          return session;
+        });
+        return template;
+      });
+
+      if (changed) saveClassTemplates();
+    }
+
+    function getSchedule() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+        return saved && typeof saved === "object" ? saved : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function setSchedule(schedule) {
+      localStorage.setItem(storageKey, JSON.stringify(schedule));
+    }
+
+    function scheduleItemKey(item) {
+      const course = normalizeCourse(item);
+      return [
+        course.templateId,
+        course.sessionId,
+        course.classId,
+        course.course,
+        course.start,
+        course.end,
+        item.sourceDate || "",
+        item.weekly ? "weekly" : "single",
+      ].join("||");
+    }
+
+    function fixWeeklyScheduleDatesOnce() {
+      if (localStorage.getItem(weeklyDateFixKey) === "done") return;
+
+      const schedule = getSchedule();
+      const nextSchedule = {};
+      const weeklyByKey = new Map();
+
+      Object.entries(schedule).forEach(([date, rows]) => {
+        if (!Array.isArray(rows)) return;
+        rows.filter(isCourseFilled).forEach((row) => {
+          const item = normalizeCourse(row);
+          const sourceDate = row.sourceDate || date;
+          if (row.weekly && sourceDate) {
+            weeklyByKey.set(scheduleItemKey({ ...item, sourceDate, weekly: true }), {
+              ...item,
+              sourceDate,
+              weekly: true,
+            });
+            return;
+          }
+          if (!nextSchedule[date]) nextSchedule[date] = [];
+          nextSchedule[date].push(row);
+        });
+      });
+
+      weeklyByKey.forEach((item) => {
+        expandSessionDates({ date: item.sourceDate, start: item.start, end: item.end, weekly: true })
+          .forEach((date) => {
+            if (!nextSchedule[date]) nextSchedule[date] = [];
+            nextSchedule[date].push(item);
+          });
+      });
+
+      setSchedule(nextSchedule);
+      localStorage.setItem(weeklyDateFixKey, "done");
+    }
+
+    function scheduledCourseTemplate(data) {
+      const item = normalizeCourse(data);
+      return `
+        <div class="scheduled-course" data-start="${escapeHtml(item.start)}" data-end="${escapeHtml(item.end)}">
+          <div class="scheduled-course-top">
+            <span class="scheduled-id">${escapeHtml(item.classId || "未填 ID")}</span>
+            <span class="scheduled-time">${escapeHtml(item.start || "--:--")} - ${escapeHtml(item.end || "--:--")}</span>
+          </div>
+          <div class="scheduled-name">${escapeHtml(item.course || "未命名课程")}</div>
+        </div>
+      `;
+    }
+
+    function getScheduledSessionKeys(schedule) {
+      const keys = new Set();
+      classTemplates.forEach((rawTemplate) => {
+        const template = normalizeClassTemplate(rawTemplate);
+        template.sessions.forEach((session) => {
+          if (session.scheduled) {
+            keys.add(`${template.templateId}||${session.sessionId}`);
+          }
+        });
+      });
+
+      Object.values(schedule).forEach((rows) => {
+        if (!Array.isArray(rows)) return;
+        rows.filter(isCourseFilled).forEach((row) => {
+          const item = normalizeCourse(row);
+          if (item.templateId && item.sessionId) {
+            keys.add(`${item.templateId}||${item.sessionId}`);
+          }
+        });
+      });
+      return keys;
+    }
+
+    function findTemplateSessionForCourse(course) {
+      const item = normalizeCourse(course);
+      for (const rawTemplate of classTemplates) {
+        const template = normalizeClassTemplate(rawTemplate);
+        if (template.templateId !== item.templateId) continue;
+        const session = template.sessions.find((entry) => entry.sessionId === item.sessionId);
+        if (session) return { template, session };
+      }
+      return null;
+    }
+
+    function generatedCoursesForDate(date, schedule) {
+      const scheduledKeys = getScheduledSessionKeys(schedule);
+      const rows = [];
+
+      classTemplates.forEach((rawTemplate) => {
+        const template = normalizeClassTemplate(rawTemplate);
+        template.sessions.forEach((session) => {
+          if (!scheduledKeys.has(`${template.templateId}||${session.sessionId}`)) return;
+          if (!session.date || date < session.date || isSessionDateCancelled(session, date)) return;
+
+          if (!session.weekly && date !== session.date) return;
+          if (session.weekly) {
+            const diffDays = Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${session.date}T00:00:00Z`)) / 86400000);
+            if (diffDays < 0 || diffDays % 7 !== 0) return;
+          }
+
+          rows.push({
+            ...courseFromTemplate(template, session),
+            sourceDate: session.date,
+            weekly: Boolean(session.weekly),
+          });
+        });
+      });
+
+      return rows;
+    }
+
+    function renderSchedule() {
+      const schedule = getSchedule();
+      document.querySelectorAll(".day[data-date]").forEach((dayCell) => {
+        const courseList = dayCell.querySelector(".course-list");
+        const storedRows = Array.isArray(schedule[dayCell.dataset.date])
+          ? schedule[dayCell.dataset.date]
+            .filter(isCourseFilled)
+            .map(normalizeCourse)
+            .filter((row) => {
+              const match = findTemplateSessionForCourse(row);
+              return !match || !isSessionDateCancelled(match.session, dayCell.dataset.date);
+            })
+          : [];
+        const rowsByKey = new Map();
+        [...storedRows, ...generatedCoursesForDate(dayCell.dataset.date, schedule)].forEach((row) => {
+          rowsByKey.set(scheduleItemKey(row), row);
+        });
+        const rows = Array.from(rowsByKey.values());
+        courseList.innerHTML = rows.map(scheduledCourseTemplate).join("")
+          + `<div class="conflict-message" role="alert"></div>`;
+        checkDayConflicts(dayCell);
+      });
+      refreshConflictStatus();
+    }
+
+    function scheduleClassOnDate(item, sessionIndex = 0) {
+      if (!isCourseFilled(item)) return false;
+      const template = normalizeClassTemplate(item);
+      const session = template.sessions[sessionIndex];
+      const dates = session?.date ? [session.date] : [];
+      if (!dates.length) return false;
+      const scheduledCourse = session ? courseFromTemplate(template, session) : normalizeCourse(item);
+      const schedule = getSchedule();
+      dates.forEach((date) => {
+        const rows = Array.isArray(schedule[date]) ? schedule[date].filter(isCourseFilled) : [];
+        const nextItem = {
+          ...scheduledCourse,
+          sourceDate: session.date,
+          weekly: Boolean(session.weekly),
+        };
+        const exists = rows.some((row) => scheduleItemKey(row) === scheduleItemKey(nextItem));
+        if (!exists) rows.push(nextItem);
+        schedule[date] = rows;
+      });
+      setSchedule(schedule);
+      const templateIndex = classTemplates.findIndex((entry) => normalizeClassTemplate(entry).templateId === template.templateId);
+      if (templateIndex >= 0 && classTemplates[templateIndex]?.sessions?.[sessionIndex]) {
+        classTemplates[templateIndex].sessions[sessionIndex].scheduled = true;
+        saveClassTemplates();
+      }
+      renderSchedule();
+      return true;
+    }
+
+    function removeScheduledSession(template, session, targetDate = "", endDate = "") {
+      const normalizedTemplate = normalizeClassTemplate(template);
+      const normalizedSession = {
+        ...session,
+        sessionId: session?.sessionId || "",
+      };
+      const schedule = getSchedule();
+      let removedCount = 0;
+
+      Object.keys(schedule).forEach((date) => {
+        if (targetDate && endDate && (date < targetDate || date > endDate)) return;
+        if (targetDate && !endDate && date !== targetDate) return;
+        if (!Array.isArray(schedule[date])) return;
+
+        const before = schedule[date].length;
+        schedule[date] = schedule[date]
+          .filter(isCourseFilled)
+          .filter((course) => {
+            const item = normalizeCourse(course);
+            if (normalizedTemplate.templateId && item.templateId !== normalizedTemplate.templateId) return true;
+            if (normalizedSession.sessionId && item.sessionId !== normalizedSession.sessionId) return true;
+            if (targetDate && item.sourceDate && item.sourceDate !== normalizedSession.date) return true;
+            return false;
+          });
+        removedCount += before - schedule[date].length;
+        if (!schedule[date].length) delete schedule[date];
+      });
+
+      if (removedCount > 0) {
+        setSchedule(schedule);
+        renderSchedule();
+      }
+
+      return removedCount;
+    }
+
+    function saveAndRefreshClasses() {
+      saveClassTemplates();
+      renderClassLibrary();
+      renderSchedule();
+    }
+
+    function cancelSessionOccurrence(templateIndex, sessionIndex, date) {
+      const template = normalizeClassTemplate(classTemplates[templateIndex] || {});
+      const session = template.sessions[sessionIndex];
+      if (!session || !date) return 0;
+      const cancelledDates = new Set(session.cancelledDates || []);
+      cancelledDates.add(date);
+      session.cancelledDates = Array.from(cancelledDates).sort();
+      classTemplates[templateIndex] = template;
+      const removedCount = removeScheduledSession(template, session, date);
+      saveAndRefreshClasses();
+      return removedCount;
+    }
+
+    function cancelSessionRange(templateIndex, sessionIndex, startDate, endDate) {
+      const template = normalizeClassTemplate(classTemplates[templateIndex] || {});
+      const session = template.sessions[sessionIndex];
+      if (!session || !startDate || !endDate) return 0;
+      const range = startDate > endDate
+        ? { start: endDate, end: startDate }
+        : { start: startDate, end: endDate };
+      session.cancelledRanges = normalizeCancelledRanges([...(session.cancelledRanges || []), range]);
+      classTemplates[templateIndex] = template;
+      const removedCount = removeScheduledSession(template, session, range.start, range.end);
+      saveAndRefreshClasses();
+      return removedCount;
+    }
+
+    function restoreSessionOccurrence(templateIndex, sessionIndex, date) {
+      const template = normalizeClassTemplate(classTemplates[templateIndex] || {});
+      const session = template.sessions[sessionIndex];
+      if (!session || !date) return false;
+      session.cancelledDates = (session.cancelledDates || []).filter((item) => item !== date);
+      classTemplates[templateIndex] = template;
+      saveClassTemplates();
+      const ok = scheduleClassOnDate(template, sessionIndex);
+      renderClassLibrary();
+      return ok;
+    }
+
+    function restoreSessionRange(templateIndex, sessionIndex, rangeIndex) {
+      const template = normalizeClassTemplate(classTemplates[templateIndex] || {});
+      const session = template.sessions[sessionIndex];
+      if (!session || !Array.isArray(session.cancelledRanges) || !session.cancelledRanges[rangeIndex]) {
+        return false;
+      }
+      session.cancelledRanges = session.cancelledRanges.filter((_, index) => index !== rangeIndex);
+      classTemplates[templateIndex] = template;
+      saveClassTemplates();
+      const ok = scheduleClassOnDate(template, sessionIndex);
+      renderClassLibrary();
+      return ok;
+    }
+
+    function pauseSessionWeekly(templateIndex, sessionIndex) {
+      const template = normalizeClassTemplate(classTemplates[templateIndex] || {});
+      const session = template.sessions[sessionIndex];
+      if (!session) return 0;
+      session.paused = true;
+      session.pausedFrom = nextSchedulableDate(session);
+      classTemplates[templateIndex] = template;
+      const removedCount = removeScheduledSession(template, session, session.pausedFrom, "9999-12-31");
+      saveAndRefreshClasses();
+      return removedCount;
+    }
+
+    function resumeSessionWeekly(templateIndex, sessionIndex) {
+      const template = normalizeClassTemplate(classTemplates[templateIndex] || {});
+      const session = template.sessions[sessionIndex];
+      if (!session) return false;
+      session.paused = false;
+      session.pausedFrom = "";
+      classTemplates[templateIndex] = template;
+      saveClassTemplates();
+      const ok = scheduleClassOnDate(template, sessionIndex);
+      renderClassLibrary();
+      return ok;
+    }
+
+    function removeScheduledClass(item) {
+      const template = normalizeClassTemplate(item);
+      const targetKeys = new Set(
+        template.sessions.map((session) => courseKey(courseFromTemplate(template, session)))
+      );
+      if (!targetKeys.size) {
+        targetKeys.add(courseKey(item));
+      }
+      const schedule = getSchedule();
+      let removedCount = 0;
+
+      Object.keys(schedule).forEach((date) => {
+        if (!Array.isArray(schedule[date])) return;
+        const before = schedule[date].length;
+        schedule[date] = schedule[date]
+          .filter(isCourseFilled)
+          .filter((course) => {
+            const item = normalizeCourse(course);
+            if (template.templateId && item.templateId === template.templateId) return false;
+            return !targetKeys.has(courseKey(item));
+          });
+        removedCount += before - schedule[date].length;
+        if (!schedule[date].length) {
+          delete schedule[date];
+        }
+      });
+
+      if (removedCount > 0) {
+        setSchedule(schedule);
+        renderSchedule();
+      }
+
+      return removedCount;
+    }
+
+    function renderClassLibrary() {
+      const query = classSearch.value.trim().toLowerCase();
+      const sessionConflicts = getClassSessionConflicts();
+      const items = classTemplates
+        .map((rawItem, index) => ({ item: normalizeClassTemplate(rawItem), index }))
+        .filter(({ item }) => {
+          if (!query) return true;
+          return `${item.classId} ${item.course}`.toLowerCase().includes(query);
+        });
+
+      classCount.textContent = classTemplates.length
+        ? `共 ${classTemplates.length} 个班级`
+        : "";
+
+      if (!items.length) {
+        classLibrary.innerHTML = `<div class="empty-library">还没有创建班级。</div>`;
+        return;
+      }
+
+      classLibrary.innerHTML = items
+        .map(({ item, index }) => {
+          const sessions = item.sessions.length ? item.sessions : [{ start: "", end: "" }];
+          return `
+          <div class="class-card">
+            <div class="class-card-main">
+              <div class="class-id-pill">${escapeHtml(item.classId || "未填 ID")}</div>
+              <div class="class-name">${escapeHtml(item.course || "未命名课程")}</div>
+              <div>
+                <button class="edit-class" type="button" data-index="${index}">编辑</button>
+                <button class="delete-class" type="button" data-index="${index}">删除</button>
+              </div>
+            </div>
+            <div class="class-session-list">
+              ${sessions.map((session, sessionIndex) => {
+                const conflict = sessionConflicts.get(`${index}:${sessionIndex}`);
+                const allDates = expandSessionDatesForControls(session);
+                const activeDates = expandSessionDates(session);
+                const sessionPaused = Boolean(session.pausedFrom);
+                const rangeStart = session.date || scheduleStart;
+                const rangeEnd = session.weekly ? monthEndKey(activeMonthKey) : (session.date || monthEndKey(activeMonthKey));
+                const rangeText = (session.cancelledRanges || [])
+                  .map((range) => `${escapeHtml(range.start)} 至 ${escapeHtml(range.end)}`)
+                  .join("、");
+                const rangeOptions = (session.cancelledRanges || [])
+                  .map((range, rangeIndex) => `<option value="${rangeIndex}">${escapeHtml(range.start)} 至 ${escapeHtml(range.end)}</option>`)
+                  .join("");
+                return `
+                  <div class="class-session-row ${conflict ? "session-conflict" : ""} ${sessionPaused ? "session-paused" : ""}">
+                    <div class="session-main">
+                      <div class="class-time">${escapeHtml(session.date || "未选日期")} · ${escapeHtml(session.start || "--:--")} - ${escapeHtml(session.end || "--:--")}${session.weekly ? " · 每周" : ""}</div>
+                      ${conflict ? `<div class="session-conflict-text">与 ${escapeHtml(conflict)} 冲突</div>` : ""}
+                      ${sessionPaused ? `<div class="session-conflict-text">已从 ${escapeHtml(session.pausedFrom)} 起停课</div>` : ""}
+                      ${rangeText ? `<div class="session-conflict-text">已设置范围停课：${rangeText}</div>` : ""}
+                      <div class="session-controls">
+                        <div class="session-control-line">
+                          ${sessionPaused
+                            ? `<button class="session-action restore restore-weekly" type="button" data-index="${index}" data-session-index="${sessionIndex}">恢复停课</button>`
+                            : `<button class="session-action cancel-weekly" type="button" data-index="${index}" data-session-index="${sessionIndex}" ${session.date ? "" : "disabled"}>停课</button>`}
+                        </div>
+                        <div class="session-control-line">
+                          <input class="range-start" type="date" min="${scheduleStart}" value="${escapeHtml(rangeStart)}" aria-label="停课开始日期" ${allDates.length ? "" : "disabled"}>
+                          <input class="range-end" type="date" min="${scheduleStart}" value="${escapeHtml(rangeEnd)}" aria-label="停课结束日期" ${allDates.length ? "" : "disabled"}>
+                          <button class="session-action cancel-range" type="button" data-index="${index}" data-session-index="${sessionIndex}" ${allDates.length ? "" : "disabled"}>指定日期范围停课</button>
+                        </div>
+                      </div>
+                      ${rangeOptions ? `
+                        <div class="session-cancelled">
+                          <select class="restore-range-select" aria-label="选择要恢复上课的停课范围">
+                            ${rangeOptions}
+                          </select>
+                          <button class="session-action restore restore-range-button" type="button" data-index="${index}" data-session-index="${sessionIndex}">恢复范围上课</button>
+                        </div>
+                      ` : ""}
+                    </div>
+                    <button class="schedule-template" type="button" data-index="${index}" data-session-index="${sessionIndex}" ${(session.date && !conflict && !sessionPaused) ? "" : "disabled"}>排入</button>
+                  </div>
+                `;
+              }).join("")}
+            </div>
+          </div>
+        `;
+        })
+        .join("");
+    }
+
+    function timeToMinutes(value) {
+      if (!value) return null;
+      const [hours, minutes] = value.split(":").map(Number);
+      if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+      return hours * 60 + minutes;
+    }
+
+    function getClassSessionConflicts() {
+      const entries = [];
+      classTemplates.forEach((rawItem, classIndex) => {
+        const item = normalizeClassTemplate(rawItem);
+        item.sessions.forEach((session, sessionIndex) => {
+          const start = timeToMinutes(session.start);
+          const end = timeToMinutes(session.end);
+          if (!session.date || start === null || end === null || end <= start) return;
+          expandSessionDates(session).forEach((date) => {
+            entries.push({
+              key: `${classIndex}:${sessionIndex}`,
+              label: `${item.classId || item.course || "未命名班级"} ${session.start}-${session.end}`,
+              date,
+              start,
+              end,
+            });
+          });
+        });
+      });
+
+      const conflicts = new Map();
+      for (let i = 0; i < entries.length; i += 1) {
+        for (let j = i + 1; j < entries.length; j += 1) {
+          const a = entries[i];
+          const b = entries[j];
+          if (a.date !== b.date) continue;
+          if (a.start < b.end && b.start < a.end) {
+            conflicts.set(a.key, b.label);
+            conflicts.set(b.key, a.label);
+          }
+        }
+      }
+      return conflicts;
+    }
+
+    function checkDayConflicts(dayCell) {
+      const rows = Array.from(dayCell.querySelectorAll(".scheduled-course"));
+      const ranges = rows
+        .map((row) => ({
+          row,
+          start: timeToMinutes(row.dataset.start),
+          end: timeToMinutes(row.dataset.end),
+        }))
+        .filter(({ start, end }) => start !== null && end !== null);
+
+      rows.forEach((row) => row.classList.remove("row-conflict"));
+
+      let message = "";
+      const invalidRange = ranges.find(({ start, end }) => end <= start);
+      if (invalidRange) {
+        invalidRange.row.classList.add("row-conflict");
+        message = "结束时间需晚于开始时间";
+      }
+
+      if (!message) {
+        for (let i = 0; i < ranges.length; i += 1) {
+          for (let j = i + 1; j < ranges.length; j += 1) {
+            const a = ranges[i];
+            const b = ranges[j];
+            if (a.start < b.end && b.start < a.end) {
+              a.row.classList.add("row-conflict");
+              b.row.classList.add("row-conflict");
+              message = "时间冲突";
+              break;
+            }
+          }
+          if (message) break;
+        }
+      }
+
+      dayCell.classList.toggle("has-conflict", Boolean(message));
+      dayCell.querySelector(".conflict-message").textContent = message;
+    }
+
+    function refreshConflictStatus() {
+      const activeSheet = document.querySelector(`.sheet[data-month="${activeMonthKey}"]`);
+      const count = activeSheet
+        ? activeSheet.querySelectorAll(".day.has-conflict").length
+        : document.querySelectorAll(".day.has-conflict").length;
+      scheduleStatus.textContent = count
+        ? `当前月份发现 ${count} 天有时间冲突，请检查红色日期格。`
+        : "从 2026 年 6 月开始，可一直往后查看；打印时只输出当前月份。";
+    }
+
+    function checkAllConflicts() {
+      document.querySelectorAll(".day:not(.empty)").forEach(checkDayConflicts);
+      refreshConflictStatus();
+    }
+
+    function saveSchedule() {
+      const schedule = {};
+      document.querySelectorAll(".day[data-date]").forEach((dayCell) => {
+        const rows = Array.from(dayCell.querySelectorAll(".course-row"))
+          .map(getCourseData)
+          .filter(isCourseFilled);
+        schedule[dayCell.dataset.date] = rows;
+      });
+      localStorage.setItem(storageKey, JSON.stringify(schedule));
+    }
+
+    function loadSchedule() {
+      let schedule = {};
+      try {
+        schedule = JSON.parse(localStorage.getItem(storageKey) || "{}");
+      } catch {
+        schedule = {};
+      }
+
+      document.querySelectorAll(".day[data-date]").forEach((dayCell) => {
+        const rawRows = schedule[dayCell.dataset.date];
+        if (!Array.isArray(rawRows)) return;
+        const rows = rawRows.filter(isCourseFilled);
+
+        const courseList = dayCell.querySelector(".course-list");
+        while (dayCell.querySelectorAll(".course-row").length < rows.length) {
+          addCourseRow(courseList);
+        }
+
+        dayCell.querySelectorAll(".course-row").forEach((row, index) => {
+          setCourseData(row, rows[index] || {});
+        });
+      });
+    }
+
+    function buildMonth({ year, month, key, title }) {
+      const sheet = document.createElement("section");
+      sheet.className = "sheet";
+      sheet.dataset.month = key;
+
+      const header = document.createElement("div");
+      header.className = "sheet-header";
+      header.innerHTML = `
+        <div>
+          <div class="title-row">
+            <span class="computer-badge" aria-hidden="true">
+              <span class="computer-icon"><span class="computer-shine"></span></span>
+            </span>
+            <div>
+              <h1>${title}</h1>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const calendar = document.createElement("div");
+      calendar.className = "calendar";
+      weekNames.forEach((name) => {
+        const cell = document.createElement("div");
+        cell.className = "weekday-head";
+        cell.textContent = name;
+        calendar.appendChild(cell);
+      });
+
+      const first = new Date(year, month, 1);
+      const totalDays = new Date(year, month + 1, 0).getDate();
+      const leadingBlanks = mondayFirstIndex(first);
+      const totalCells = Math.ceil((leadingBlanks + totalDays) / 7) * 7;
+
+      for (let index = 0; index < totalCells; index += 1) {
+        const dayNumber = index - leadingBlanks + 1;
+        const cell = document.createElement("div");
+        cell.className = "day";
+
+        if (dayNumber < 1 || dayNumber > totalDays) {
+          cell.classList.add("empty");
+          calendar.appendChild(cell);
+          continue;
+        }
+
+        const date = new Date(year, month, dayNumber);
+        cell.dataset.date = dateKey(year, month, dayNumber);
+        if (date.getDay() === 0 || date.getDay() === 6) {
+          cell.classList.add("weekend");
+        }
+
+        cell.innerHTML = `
+          <div class="date-line">
+            <span class="date">${dayNumber}</span>
+            <span class="weekday">${nativeWeekday[date.getDay()]}</span>
+          </div>
+          <div class="course-list" aria-label="${dayNumber} 日课程填写区域">
+            <div class="conflict-message" role="alert"></div>
+          </div>
+        `;
+        calendar.appendChild(cell);
+      }
+
+      sheet.append(header, calendar);
+      return sheet;
+    }
+
+    function renderMonthTabs() {
+      monthTabs.innerHTML = `
+        <button class="month-tab" type="button" data-step="-1" ${activeMonthKey <= scheduleStartMonth ? "disabled" : ""} aria-label="上一个月">上一月</button>
+        <input class="month-select" type="month" min="${scheduleStartMonth}" value="${activeMonthKey}" aria-label="选择月份">
+        <button class="month-tab" type="button" data-step="1" aria-label="下一个月">下一月</button>
+      `;
+    }
+
+    function showActiveMonth(monthKey = activeMonthKey) {
+      activeMonthKey = monthKey < scheduleStartMonth ? scheduleStartMonth : monthFromKey(monthKey).key;
+      sheets.innerHTML = "";
+      sheets.appendChild(buildMonth(monthFromKey(activeMonthKey)));
+      renderMonthTabs();
+      renderSchedule();
+      refreshConflictStatus();
+    }
+
+    renderMonthTabs();
+    showActiveMonth(activeMonthKey);
+    resetOldScheduleOnce();
+    loadClassTemplates();
+    markScheduledSessionsFromSchedule();
+    fixWeeklyScheduleDatesOnce();
+    renderClassLibrary();
+    renderSchedule();
+    updatePasteButtons();
+    addSessionField();
+
+    printButton.addEventListener("click", printCurrentMonth);
+    openClassPageButton.addEventListener("click", showClassView);
+    backToScheduleButton.addEventListener("click", showScheduleView);
+    monthTabs.addEventListener("click", (event) => {
+      const button = event.target.closest(".month-tab[data-step]");
+      if (!button || button.disabled) return;
+      showActiveMonth(addMonthsToKey(activeMonthKey, Number(button.dataset.step)));
+    });
+    monthTabs.addEventListener("change", (event) => {
+      const select = event.target.closest(".month-select");
+      if (!select) return;
+      showActiveMonth(select.value);
+    });
+
+    classForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const formData = new FormData(classForm);
+      const previousTemplate = editingClassIndex !== null
+        ? normalizeClassTemplate(classTemplates[editingClassIndex] || {})
+        : null;
+      const item = {
+        templateId: previousTemplate?.templateId || makeId("class"),
+        classId: String(formData.get("classId") || "").trim(),
+        course: String(formData.get("course") || "").trim(),
+        sessions: collectSessions(),
+      };
+
+      if (!isTemplateFilled(item) || !hasCompleteSession(item)) {
+        scheduleStatus.textContent = "请至少填写一条完整的上课日期、开始时间和结束时间。";
+        return;
+      }
+
+      const nextTemplate = normalizeClassTemplate(item);
+      if (editingClassIndex !== null) {
+        const removedCount = removeScheduledClass(previousTemplate);
+        classTemplates[editingClassIndex] = nextTemplate;
+        nextTemplate.sessions.forEach((session, sessionIndex) => {
+          if (removedCount > 0 && session.date) {
+            scheduleClassOnDate(nextTemplate, sessionIndex);
+          }
+        });
+        scheduleStatus.textContent = removedCount
+          ? `已更新班级，并同步刷新 ${removedCount} 条月份表课程。`
+          : `已更新班级 ${nextTemplate.classId || nextTemplate.course}。`;
+      } else {
+        classTemplates.push(nextTemplate);
+        copiedCourse = nextTemplate.sessions[0] ? courseFromTemplate(nextTemplate, nextTemplate.sessions[0]) : null;
+        scheduleStatus.textContent = `已创建班级 ${nextTemplate.classId || nextTemplate.course}，可在班级库排入月份表。`;
+      }
+
+      saveClassTemplates();
+      renderClassLibrary();
+      resetClassForm();
+      updatePasteButtons();
+    });
+
+    cancelEditClassButton.addEventListener("click", () => {
+      resetClassForm();
+      scheduleStatus.textContent = "已取消编辑。";
+    });
+
+    classSearch.addEventListener("input", renderClassLibrary);
+
+    addSessionTimeButton.addEventListener("click", () => {
+      addSessionField(getLastSessionData());
+    });
+
+    sessionList.addEventListener("click", (event) => {
+      const removeButton = event.target.closest(".remove-session");
+      if (!removeButton) return;
+      if (sessionList.querySelectorAll(".session-row").length <= 1) return;
+      removeButton.closest(".session-row").remove();
+    });
+
+    classLibrary.addEventListener("click", (event) => {
+      const cancelOnceButton = event.target.closest(".cancel-once");
+      if (cancelOnceButton) {
+        const index = Number(cancelOnceButton.dataset.index);
+        const sessionIndex = Number(cancelOnceButton.dataset.sessionIndex || 0);
+        const row = cancelOnceButton.closest(".class-session-row");
+        const date = row?.querySelector(".cancel-date")?.value || "";
+        const removedCount = cancelSessionOccurrence(index, sessionIndex, date);
+        scheduleStatus.textContent = removedCount
+          ? `已将 ${date} 这一次课程停课，并同步到月份表。`
+          : `已记录 ${date} 停课，月份表中没有找到对应课程。`;
+        showToast("已设置本次停课");
+        return;
+      }
+
+      const restoreOnceButton = event.target.closest(".restore-once");
+      if (restoreOnceButton) {
+        const index = Number(restoreOnceButton.dataset.index);
+        const sessionIndex = Number(restoreOnceButton.dataset.sessionIndex || 0);
+        const row = restoreOnceButton.closest(".class-session-row");
+        const date = row?.querySelector(".restore-date")?.value || "";
+        const ok = restoreSessionOccurrence(index, sessionIndex, date);
+        scheduleStatus.textContent = ok
+          ? `已恢复 ${date} 这一次课程，并同步到月份表。`
+          : "请先检查这个时间段是否有完整日期和时间。";
+        showToast(ok ? "已恢复本次课程" : "恢复失败");
+        return;
+      }
+
+      const cancelRangeButton = event.target.closest(".cancel-range");
+      if (cancelRangeButton) {
+        const index = Number(cancelRangeButton.dataset.index);
+        const sessionIndex = Number(cancelRangeButton.dataset.sessionIndex || 0);
+        const row = cancelRangeButton.closest(".class-session-row");
+        const startDate = row?.querySelector(".range-start")?.value || "";
+        const endDate = row?.querySelector(".range-end")?.value || "";
+        const removedCount = cancelSessionRange(index, sessionIndex, startDate, endDate);
+        const start = startDate <= endDate ? startDate : endDate;
+        const end = startDate <= endDate ? endDate : startDate;
+        scheduleStatus.textContent = removedCount
+          ? `已将 ${start} 至 ${end} 范围内的课程停课，并同步到月份表。`
+          : `已记录 ${start} 至 ${end} 范围停课，月份表中没有找到对应课程。`;
+        showToast("已设置范围停课");
+        return;
+      }
+
+      const restoreRangeButton = event.target.closest(".restore-range-button");
+      if (restoreRangeButton) {
+        const index = Number(restoreRangeButton.dataset.index);
+        const sessionIndex = Number(restoreRangeButton.dataset.sessionIndex || 0);
+        const row = restoreRangeButton.closest(".class-session-row");
+        const rangeIndex = Number(row?.querySelector(".restore-range-select")?.value || 0);
+        const ok = restoreSessionRange(index, sessionIndex, rangeIndex);
+        scheduleStatus.textContent = ok
+          ? "已恢复这个日期范围内的课程，并同步到月份表。"
+          : "请先选择一个已停课的日期范围。";
+        showToast(ok ? "已恢复范围课程" : "恢复失败");
+        return;
+      }
+
+      const cancelWeeklyButton = event.target.closest(".cancel-weekly");
+      if (cancelWeeklyButton) {
+        const index = Number(cancelWeeklyButton.dataset.index);
+        const sessionIndex = Number(cancelWeeklyButton.dataset.sessionIndex || 0);
+        const removedCount = pauseSessionWeekly(index, sessionIndex);
+        scheduleStatus.textContent = removedCount
+          ? `已将这个时间段后续停课，并从月份表移除 ${removedCount} 条课程。`
+          : "已将这个时间段设为停课。";
+        showToast("已设置停课");
+        return;
+      }
+
+      const restoreWeeklyButton = event.target.closest(".restore-weekly");
+      if (restoreWeeklyButton) {
+        const index = Number(restoreWeeklyButton.dataset.index);
+        const sessionIndex = Number(restoreWeeklyButton.dataset.sessionIndex || 0);
+        const ok = resumeSessionWeekly(index, sessionIndex);
+        scheduleStatus.textContent = ok
+          ? "已恢复这个时间段的课程，并同步到月份表。"
+          : "请先检查这个时间段是否有完整日期和时间。";
+        showToast(ok ? "已恢复课程" : "恢复失败");
+        return;
+      }
+
+      const scheduleButton = event.target.closest(".schedule-template");
+      if (scheduleButton) {
+        const index = Number(scheduleButton.dataset.index);
+        const sessionIndex = Number(scheduleButton.dataset.sessionIndex || 0);
+        const conflicts = getClassSessionConflicts();
+        if (conflicts.has(`${index}:${sessionIndex}`)) {
+          scheduleStatus.textContent = "这个上课时间与其他班级冲突，不能排入月份表。";
+          showToast("时间冲突，无法排入");
+          return;
+        }
+        const ok = scheduleClassOnDate(classTemplates[index], sessionIndex);
+        if (ok) {
+          scheduleStatus.textContent = "排课成功，已显示到月份表。";
+          showToast("排课成功");
+          flashScheduleButton(scheduleButton);
+        } else {
+          scheduleStatus.textContent = "请先为这个上课时间设置 2026 年 6-8 月内的日期。";
+          showToast("请先设置上课日期");
+        }
+        return;
+      }
+
+      const editButton = event.target.closest(".edit-class");
+      if (editButton) {
+        editingClassIndex = Number(editButton.dataset.index);
+        fillClassForm(classTemplates[editingClassIndex]);
+        scheduleStatus.textContent = "正在编辑班级，修改后点“更新”。";
+        return;
+      }
+
+      const deleteButton = event.target.closest(".delete-class");
+      if (!deleteButton) return;
+
+      const deletedClass = classTemplates[Number(deleteButton.dataset.index)];
+      const removedCount = removeScheduledClass(deletedClass);
+      classTemplates.splice(Number(deleteButton.dataset.index), 1);
+      saveClassTemplates();
+      renderClassLibrary();
+      scheduleStatus.textContent = removedCount
+        ? `已删除这个班级模板，并从月份表移除 ${removedCount} 条已排课程。`
+        : "已删除这个班级模板。";
+    });
+
+    checkAllConflicts();
+  </script>
+</body>
+</html>

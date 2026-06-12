@@ -16,6 +16,9 @@
       --course-orange-soft: #fff3e8;
       --weekend: #0066cc;
       --page: #ffffff;
+      --glass: rgba(255, 255, 255, 0.68);
+      --glass-strong: rgba(255, 255, 255, 0.8);
+      --glass-line: rgba(255, 255, 255, 0.74);
     }
 
     * {
@@ -24,7 +27,10 @@
 
     body {
       margin: 0;
-      background: #f5f5f7;
+      background:
+        radial-gradient(circle at 8% 8%, rgba(0, 113, 227, 0.13), transparent 34%),
+        radial-gradient(circle at 88% 12%, rgba(52, 199, 174, 0.13), transparent 32%),
+        linear-gradient(180deg, #fbfdff 0%, #f5f5f7 52%, #edf3fb 100%);
       color: var(--ink);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
         "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
@@ -39,20 +45,27 @@
       justify-content: flex-start;
       gap: 12px;
       padding: 12px 18px;
-      background: rgba(251, 251, 253, 0.82);
+      background: rgba(251, 251, 253, 0.64);
       backdrop-filter: saturate(180%) blur(18px);
-      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      -webkit-backdrop-filter: saturate(180%) blur(18px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.72);
+      box-shadow: 0 10px 28px rgba(42, 61, 92, 0.07);
     }
 
     .toolbar button,
+    .toolbar .home-link,
     .secondary-button,
     .primary-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       border: 0;
       border-radius: 999px;
       padding: 8px 18px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
+      text-decoration: none;
     }
 
     .toolbar button,
@@ -67,10 +80,40 @@
       color: var(--ink);
     }
 
+    .toolbar .home-link {
+      background: rgba(232, 232, 237, 0.72);
+      color: var(--ink);
+      box-shadow: none;
+    }
+
+    .toolbar .home-link:hover {
+      background: rgba(210, 210, 215, 0.82);
+    }
+
     .toolbar span {
       align-self: center;
       color: var(--muted);
       font-size: 14px;
+    }
+
+    .local-data-note {
+      width: min(1160px, calc(100vw - 36px));
+      margin: 18px auto 0;
+      padding: 14px 18px;
+      border: 1px solid rgba(0, 113, 227, 0.16);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.66);
+      color: #465a70;
+      box-shadow: 0 16px 38px rgba(36, 55, 92, 0.08);
+      backdrop-filter: saturate(170%) blur(22px);
+      -webkit-backdrop-filter: saturate(170%) blur(22px);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .local-data-note strong {
+      color: #075aa7;
+      margin-right: 6px;
     }
 
     .month-tabs {
@@ -151,11 +194,13 @@
     }
 
     .class-panel {
-      background: var(--page);
-      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: var(--glass);
+      border: 1px solid var(--glass-line);
       border-radius: 24px;
       box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
       padding: 28px;
+      backdrop-filter: saturate(170%) blur(24px);
+      -webkit-backdrop-filter: saturate(170%) blur(24px);
     }
 
     .class-page-header {
@@ -310,9 +355,9 @@
       display: grid;
       gap: 12px;
       padding: 12px;
-      border: 1px solid #ededf0;
+      border: 1px solid rgba(255, 255, 255, 0.78);
       border-radius: 14px;
-      background: #fff;
+      background: rgba(255, 255, 255, 0.72);
     }
 
     .class-card-main {
@@ -320,6 +365,13 @@
       grid-template-columns: minmax(70px, 0.7fr) minmax(0, 1.5fr) auto;
       align-items: center;
       gap: 12px;
+    }
+
+    .class-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 6px;
     }
 
     .class-id-pill {
@@ -354,7 +406,7 @@
       align-items: center;
       padding: 9px;
       border-radius: 12px;
-      background: #fafafa;
+      background: rgba(250, 250, 250, 0.72);
     }
 
     .class-session-row.session-conflict {
@@ -446,6 +498,7 @@
     }
 
     .edit-class,
+    .export-class,
     .delete-class {
       border: 0;
       border-radius: 999px;
@@ -458,6 +511,10 @@
 
     .edit-class {
       color: var(--accent);
+    }
+
+    .export-class {
+      color: #075aa7;
     }
 
     .delete-class {
@@ -494,14 +551,16 @@
     }
 
     .sheet {
-      background: var(--page);
-      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: var(--glass);
+      border: 1px solid var(--glass-line);
       border-radius: 24px;
       box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
       padding: 28px;
       page-break-after: always;
       position: relative;
       overflow: hidden;
+      backdrop-filter: saturate(170%) blur(24px);
+      -webkit-backdrop-filter: saturate(170%) blur(24px);
     }
 
     .sheet::before {
@@ -607,7 +666,9 @@
       border: 1px solid var(--line);
       border-radius: 18px;
       overflow: hidden;
-      background: #fff;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
     }
 
     .weekday-head,
@@ -622,7 +683,7 @@
     }
 
     .weekday-head {
-      background: #f5f5f7;
+      background: rgba(245, 245, 247, 0.72);
       color: #424245;
       padding: 12px 8px 10px;
       text-align: center;
@@ -637,7 +698,7 @@
 
     .day {
       min-height: 154px;
-      background: #fff;
+      background: rgba(255, 255, 255, 0.72);
       padding: 10px;
       display: flex;
       flex-direction: column;
@@ -645,7 +706,7 @@
     }
 
     .day.empty {
-      background: #fafafa;
+      background: rgba(250, 250, 250, 0.54);
     }
 
     .day:nth-last-child(-n + 7) {
@@ -687,7 +748,7 @@
     }
 
     .weekend {
-      background: #fbfdff;
+      background: rgba(251, 253, 255, 0.72);
     }
 
     .course-list {
@@ -939,12 +1000,17 @@
 
       .class-page-header,
       .class-form,
+      .class-card-main,
       .class-card {
         grid-template-columns: 1fr;
       }
 
       .class-page-header {
         align-items: stretch;
+      }
+
+      .class-actions {
+        justify-content: flex-start;
       }
 
       .sheet-header {
@@ -1067,6 +1133,7 @@
       .add-course,
       .paste-day,
       .course-row-tools,
+      .local-data-note,
       .toast {
         display: none;
       }
@@ -1075,10 +1142,14 @@
 </head>
 <body>
   <div class="toolbar">
+    <a class="home-link" href="index.html" aria-label="返回轻课主页">返回首页</a>
     <button type="button" id="printButton">打印 / 保存为 PDF</button>
     <button type="button" id="openClassPage">班级管理</button>
     <div id="monthTabs" class="month-tabs" aria-label="选择月份"></div>
     <span id="scheduleStatus">建议横向 A4 打印；每个月单独一页。</span>
+  </div>
+  <div class="local-data-note" role="note">
+    <strong>本地保存提示</strong>当前课表和班级数据只保存在这台设备的这个浏览器里，不会上传到云端。请不要随意清理浏览器数据；后续可再升级账号同步。
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
@@ -1503,20 +1574,56 @@
       }, 1700);
     }
 
-    function printCurrentMonth() {
-      showScheduleView();
+    function refreshSheetConflictState(sheetElement) {
+      sheetElement.querySelectorAll(".day[data-date]").forEach(checkDayConflicts);
+    }
+
+    function filterSheetToClass(sheetElement, template) {
+      const normalizedTemplate = normalizeClassTemplate(template);
+      sheetElement.querySelectorAll(".scheduled-course").forEach((row) => {
+        if (row.dataset.templateId !== normalizedTemplate.templateId) {
+          row.remove();
+        }
+      });
+      refreshSheetConflictState(sheetElement);
+      return sheetElement.querySelectorAll(".scheduled-course").length;
+    }
+
+    function printCurrentMonth(options = {}) {
+      const prepareInBackground = Boolean(options.prepareInBackground);
+      if (!prepareInBackground) {
+        showScheduleView();
+      }
       renderSchedule();
-      const sheet = document.querySelector(".sheet");
+      const sheet = document.querySelector(`.sheet[data-month="${activeMonthKey}"]`) || document.querySelector(".sheet");
       if (!sheet) {
         scheduleStatus.textContent = "当前没有可打印的月份。";
         showToast("没有可打印内容");
         return;
       }
 
+      const month = monthFromKey(activeMonthKey);
+      const sheetForPrint = sheet.cloneNode(true);
+      let courseCount = sheetForPrint.querySelectorAll(".scheduled-course").length;
+      const filterTemplate = options.template ? normalizeClassTemplate(options.template) : null;
+      if (filterTemplate) {
+        courseCount = filterSheetToClass(sheetForPrint, filterTemplate);
+        const title = sheetForPrint.querySelector("h1");
+        if (title) {
+          title.textContent = `${month.title} - ${filterTemplate.classId || filterTemplate.course || "本班"}课表`;
+        }
+      }
+
+      if (filterTemplate && !courseCount) {
+        showToast("当前月份没有本班课程");
+        scheduleStatus.textContent = "这个班级在当前月份还没有已排入的课程。";
+        return;
+      }
+
       document.querySelector("#printFrame")?.remove();
       const frame = document.createElement("iframe");
       frame.id = "printFrame";
-      frame.title = "打印当前月份";
+      frame.title = filterTemplate ? "导出本班课表" : "打印当前月份";
       frame.style.position = "fixed";
       frame.style.right = "0";
       frame.style.bottom = "0";
@@ -1529,14 +1636,16 @@
       const styles = Array.from(document.querySelectorAll("style"))
         .map((style) => style.textContent)
         .join("\n");
-      const month = monthFromKey(activeMonthKey);
+      const printTitle = filterTemplate
+        ? `${month.title} - ${filterTemplate.classId || filterTemplate.course || "本班"}课表`
+        : month.title;
       const printDocument = frame.contentDocument || frame.contentWindow.document;
       printDocument.open();
       printDocument.write(`<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <title>${escapeHtml(month.title)}</title>
+  <title>${escapeHtml(printTitle)}</title>
   <style>
     ${styles}
     body {
@@ -1569,7 +1678,7 @@
   </style>
 </head>
 <body>
-  <main>${sheet.outerHTML}</main>
+  <main>${sheetForPrint.outerHTML}</main>
 </body>
 </html>`);
       printDocument.close();
@@ -1579,9 +1688,10 @@
         if (didPrint) return;
         didPrint = true;
         frame.contentWindow.focus();
+        scheduleStatus.textContent = filterTemplate
+          ? "请选择保存为 PDF 来导出本班课表；如果取消，本次不会生成文件。"
+          : "请选择保存为 PDF 来导出当前月份课表；如果取消，本次不会生成文件。";
         frame.contentWindow.print();
-        scheduleStatus.textContent = "已打开打印窗口，可在系统打印对话框中选择“保存为 PDF”。";
-        showToast("已打开打印窗口");
         window.setTimeout(() => frame.remove(), 1200);
       };
 
@@ -1723,7 +1833,7 @@
     function scheduledCourseTemplate(data) {
       const item = normalizeCourse(data);
       return `
-        <div class="scheduled-course" data-start="${escapeHtml(item.start)}" data-end="${escapeHtml(item.end)}">
+        <div class="scheduled-course" data-template-id="${escapeHtml(item.templateId)}" data-session-id="${escapeHtml(item.sessionId)}" data-start="${escapeHtml(item.start)}" data-end="${escapeHtml(item.end)}">
           <div class="scheduled-course-top">
             <span class="scheduled-id">${escapeHtml(item.classId || "未填 ID")}</span>
             <span class="scheduled-time">${escapeHtml(item.start || "--:--")} - ${escapeHtml(item.end || "--:--")}</span>
@@ -2030,7 +2140,8 @@
             <div class="class-card-main">
               <div class="class-id-pill">${escapeHtml(item.classId || "未填 ID")}</div>
               <div class="class-name">${escapeHtml(item.course || "未命名课程")}</div>
-              <div>
+              <div class="class-actions">
+                <button class="export-class" type="button" data-index="${index}">导出本班课表</button>
                 <button class="edit-class" type="button" data-index="${index}">编辑</button>
                 <button class="delete-class" type="button" data-index="${index}">删除</button>
               </div>
@@ -2469,6 +2580,15 @@
           ? "已恢复这个时间段的课程，并同步到月份表。"
           : "请先检查这个时间段是否有完整日期和时间。";
         showToast(ok ? "已恢复课程" : "恢复失败");
+        return;
+      }
+
+      const exportButton = event.target.closest(".export-class");
+      if (exportButton) {
+        const index = Number(exportButton.dataset.index);
+        const template = classTemplates[index];
+        if (!template) return;
+        printCurrentMonth({ template, prepareInBackground: true });
         return;
       }
 

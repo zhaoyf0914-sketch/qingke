@@ -22,6 +22,9 @@
       --orange: #b84a00;
       --orange-soft: #fff0e2;
       --shadow: 0 18px 42px rgba(27, 39, 64, 0.08);
+      --glass: rgba(255, 255, 255, 0.68);
+      --glass-strong: rgba(255, 255, 255, 0.78);
+      --glass-line: rgba(255, 255, 255, 0.68);
     }
 
     * {
@@ -34,7 +37,10 @@
 
     body {
       margin: 0;
-      background: var(--bg);
+      background:
+        radial-gradient(circle at 8% 8%, rgba(10, 132, 255, 0.12), transparent 32%),
+        radial-gradient(circle at 86% 14%, rgba(72, 199, 184, 0.12), transparent 30%),
+        linear-gradient(180deg, #fbfdff 0%, var(--bg) 48%, #eef4fb 100%);
       color: var(--text);
       font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
       line-height: 1.5;
@@ -55,9 +61,11 @@
       gap: 28px;
       min-height: 72px;
       padding: 0 7vw;
-      background: rgba(255, 255, 255, 0.9);
-      border-bottom: 1px solid var(--line-soft);
-      backdrop-filter: blur(18px);
+      background: rgba(255, 255, 255, 0.62);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.72);
+      box-shadow: 0 12px 28px rgba(36, 55, 92, 0.06);
+      backdrop-filter: saturate(180%) blur(22px);
+      -webkit-backdrop-filter: saturate(180%) blur(22px);
     }
 
     .brand {
@@ -125,11 +133,18 @@
       color: var(--blue);
     }
 
-    .auth-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      white-space: nowrap;
+    .nav button {
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-weight: inherit;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .nav button:hover {
+      color: var(--blue);
     }
 
     .button {
@@ -187,8 +202,8 @@
       overflow: hidden;
       padding: 96px 7vw 88px;
       background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(245, 247, 251, 0.86)),
-        linear-gradient(90deg, rgba(255,255,255,0.84), rgba(255,255,255,0.42)),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(245, 247, 251, 0.72)),
+        linear-gradient(90deg, rgba(255,255,255,0.72), rgba(255,255,255,0.32)),
         repeating-linear-gradient(90deg, rgba(10, 132, 255, 0.12) 0 1px, transparent 1px 132px),
         repeating-linear-gradient(0deg, rgba(10, 132, 255, 0.09) 0 1px, transparent 1px 92px);
       border-bottom: 1px solid var(--line-soft);
@@ -258,10 +273,12 @@
       gap: 56px;
       align-items: center;
       padding: 56px;
-      background: var(--surface);
-      border: 1px solid var(--line-soft);
-      border-radius: 8px;
+      background: var(--glass);
+      border: 1px solid var(--glass-line);
+      border-radius: 24px;
       box-shadow: var(--shadow);
+      backdrop-filter: saturate(170%) blur(24px);
+      -webkit-backdrop-filter: saturate(170%) blur(24px);
     }
 
     .status {
@@ -306,9 +323,11 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
       padding: 28px;
-      background: var(--surface-soft);
-      border: 1px solid var(--line);
-      border-radius: 8px;
+      background: rgba(248, 251, 255, 0.58);
+      border: 1px solid rgba(222, 232, 245, 0.76);
+      border-radius: 18px;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
     }
 
     .feature {
@@ -318,9 +337,96 @@
       align-items: start;
       min-height: 84px;
       padding: 14px;
-      background: #fff;
-      border: 1px solid var(--line-soft);
-      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.82);
+      border-radius: 14px;
+    }
+
+    .data-notice {
+      max-width: 650px;
+      margin: 22px 0 28px;
+      padding: 16px 18px;
+      border: 1px solid rgba(10, 132, 255, 0.16);
+      border-radius: 18px;
+      background: rgba(234, 244, 255, 0.62);
+      color: #3f566f;
+      font-size: 15px;
+      line-height: 1.55;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .data-notice strong {
+      display: block;
+      margin-bottom: 3px;
+      color: #124c89;
+      font-size: 15px;
+    }
+
+    .feedback-dialog {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(15, 23, 42, 0.18);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .feedback-dialog[hidden] {
+      display: none;
+    }
+
+    .feedback-card {
+      width: min(440px, 100%);
+      padding: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 26px 70px rgba(28, 42, 70, 0.18);
+      backdrop-filter: saturate(170%) blur(26px);
+      -webkit-backdrop-filter: saturate(170%) blur(26px);
+    }
+
+    .feedback-card h2 {
+      margin-bottom: 10px;
+      font-size: 26px;
+      line-height: 1.16;
+    }
+
+    .feedback-card p {
+      margin-bottom: 18px;
+      color: #5f6b7a;
+      font-size: 16px;
+    }
+
+    .feedback-email {
+      display: block;
+      margin-bottom: 22px;
+      padding: 14px 16px;
+      border: 1px solid rgba(10, 132, 255, 0.16);
+      border-radius: 16px;
+      background: rgba(234, 244, 255, 0.66);
+      color: #075aa7;
+      font-size: 18px;
+      font-weight: 800;
+      text-align: center;
+      overflow-wrap: anywhere;
+    }
+
+    .feedback-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .feedback-copy-status {
+      min-height: 22px;
+      margin: 12px 0 0;
+      color: #075aa7;
+      font-size: 14px;
+      font-weight: 750;
     }
 
     .feature-number {
@@ -391,10 +497,6 @@
         font-size: 17px;
       }
 
-      .auth-actions {
-        display: none;
-      }
-
       h1 {
         font-size: 42px;
         white-space: normal;
@@ -421,6 +523,10 @@
         display: block;
         margin: 14px 0 0;
       }
+
+      .feedback-actions {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -432,12 +538,8 @@
     </a>
     <nav class="nav" aria-label="页面导航">
       <a href="#tools">工具</a>
-      <a href="mailto:feedback@example.com">反馈建议</a>
+      <button type="button" id="openFeedback">反馈建议</button>
     </nav>
-    <div class="auth-actions" aria-label="账号操作">
-      <a class="button ghost" href="#">登录</a>
-      <a class="button primary small" href="#">注册</a>
-    </div>
   </header>
 
   <section class="hero">
@@ -458,6 +560,10 @@
           <span class="status">已上线</span>
           <h2>课程排课表</h2>
           <p>支持按月份查看课表，创建班级，设置固定每周上课、临时停课、指定日期范围停课，并可打印或保存为 PDF。适合平时班、寒暑假班和短期集训。</p>
+          <div class="data-notice" role="note">
+            <strong>数据保存在本地浏览器</strong>
+            当前版本不会上传到云端。请尽量使用同一台电脑和同一个浏览器，清理浏览器数据前请先确认不再需要这些课表。
+          </div>
           <a class="button primary" href="summer_schedule_2026_website_imported.html">排课助手</a>
         </div>
 
@@ -484,5 +590,63 @@
 
     <footer class="footer" aria-hidden="true"></footer>
   </main>
+
+  <div class="feedback-dialog" id="feedbackDialog" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle" hidden>
+    <div class="feedback-card">
+      <h2 id="feedbackTitle">感谢你的反馈</h2>
+      <p>如果你在使用轻课时遇到问题，或有新的功能想法，欢迎把反馈建议发到这个邮箱：</p>
+      <span class="feedback-email">444074219@qq.com</span>
+      <div class="feedback-actions">
+        <button class="button primary" type="button" id="copyFeedbackEmail">复制邮箱</button>
+        <button class="button secondary" type="button" id="closeFeedback">稍后再说</button>
+      </div>
+      <p class="feedback-copy-status" id="feedbackCopyStatus" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <script>
+    const feedbackDialog = document.querySelector("#feedbackDialog");
+    const openFeedback = document.querySelector("#openFeedback");
+    const closeFeedback = document.querySelector("#closeFeedback");
+    const copyFeedbackEmail = document.querySelector("#copyFeedbackEmail");
+    const feedbackCopyStatus = document.querySelector("#feedbackCopyStatus");
+    const feedbackEmail = "444074219@qq.com";
+
+    function closeFeedbackDialog() {
+      feedbackDialog.hidden = true;
+      openFeedback.focus();
+    }
+
+    openFeedback.addEventListener("click", () => {
+      feedbackDialog.hidden = false;
+      feedbackCopyStatus.textContent = "";
+      copyFeedbackEmail.textContent = "复制邮箱";
+      copyFeedbackEmail.focus();
+    });
+
+    copyFeedbackEmail.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(feedbackEmail);
+        copyFeedbackEmail.textContent = "已复制";
+        feedbackCopyStatus.textContent = "邮箱已复制，感谢你的反馈。";
+      } catch (error) {
+        const emailNode = document.querySelector(".feedback-email");
+        const range = document.createRange();
+        const selection = window.getSelection();
+        range.selectNodeContents(emailNode);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        feedbackCopyStatus.textContent = "已选中邮箱，请手动复制。";
+      }
+    });
+
+    closeFeedback.addEventListener("click", closeFeedbackDialog);
+    feedbackDialog.addEventListener("click", (event) => {
+      if (event.target === feedbackDialog) closeFeedbackDialog();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !feedbackDialog.hidden) closeFeedbackDialog();
+    });
+  </script>
 </body>
 </html>

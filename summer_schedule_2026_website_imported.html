@@ -1850,6 +1850,22 @@
       authMessage.classList.toggle("is-success", type === "success");
     }
 
+    function formatAuthError(error, fallback = "请稍后再试。") {
+      if (!error) return fallback;
+      const parts = [];
+      const message = typeof error.message === "string" ? error.message.trim() : "";
+      const details = typeof error.details === "string" ? error.details.trim() : "";
+      const hint = typeof error.hint === "string" ? error.hint.trim() : "";
+      const code = typeof error.code === "string" ? error.code.trim() : "";
+
+      if (message) parts.push(message);
+      if (details && details !== message) parts.push(details);
+      if (hint) parts.push(`提示：${hint}`);
+      if (code) parts.push(`错误码：${code}`);
+
+      return parts.join(" | ") || fallback;
+    }
+
     function getAuthQueryMode() {
       const mode = new URLSearchParams(window.location.search).get("auth");
       return mode === "signup" ? "signup" : "signin";
@@ -1987,7 +2003,7 @@
 
       if (error) {
         scheduleStatus.textContent = "云端保存暂时失败，当前数据仍保留在这个浏览器里。";
-        setAuthMessage("云端保存暂时失败，请稍后再试。", "error");
+        setAuthMessage(`云端保存暂时失败：${formatAuthError(error)}`, "error");
         return;
       }
 
@@ -2000,7 +2016,7 @@
       queueCloudSync.timer = window.setTimeout(() => {
         persistCloudPayload().catch((error) => {
           console.error(error);
-          setAuthMessage("云端保存暂时失败，请稍后再试。", "error");
+          setAuthMessage(`云端保存暂时失败：${formatAuthError(error)}`, "error");
         });
       }, 260);
     }
@@ -2032,7 +2048,7 @@
         cloudPayload = await fetchCloudPayload(user.id);
       } catch (error) {
         console.error(error);
-        setAuthMessage("账号已登录，但云端数据读取失败。请检查 Supabase 数据表和权限设置。", "error");
+        setAuthMessage(`账号已登录，但云端数据读取失败：${formatAuthError(error)}`, "error");
       }
 
       if (hasPayloadData(cloudPayload)) {
@@ -2091,7 +2107,7 @@
             await hydrateUserData(currentUser);
           } catch (error) {
             console.error(error);
-            setAuthMessage(error?.message || "已登录，但云端数据同步失败。", "error");
+            setAuthMessage(`已登录，但云端数据同步失败：${formatAuthError(error)}`, "error");
             scheduleStatus.textContent = "已登录，但云端课表暂时没有同步成功。";
             return;
           }
@@ -2167,7 +2183,7 @@
         }
       } catch (error) {
         console.error(error);
-        setAuthMessage(error?.message || "登录失败，请稍后再试。", "error");
+        setAuthMessage(`登录失败：${formatAuthError(error)}`, "error");
       } finally {
         authSubmitButton.disabled = false;
       }
@@ -3268,7 +3284,7 @@
         .then(async ({ data, error }) => {
           if (error) {
             console.error(error);
-            setAuthMessage("账号状态读取失败，请稍后刷新页面重试。", "error");
+            setAuthMessage(`账号状态读取失败：${formatAuthError(error)}`, "error");
           }
           authInitialized = true;
           await handleAuthState(data.session?.user || null, { skipHydrate: false });
@@ -3277,7 +3293,7 @@
           console.error(error);
           authInitialized = true;
           showAuthGate(getAuthQueryMode());
-          setAuthMessage("账号初始化失败，请稍后刷新页面重试。", "error");
+          setAuthMessage(`账号初始化失败：${formatAuthError(error)}`, "error");
         });
     } else {
       authInitialized = true;

@@ -1500,6 +1500,7 @@
     let authMode = "signin";
     let currentUser = null;
     let suppressCloudSync = false;
+    let cloudSyncSuspended = false;
     let hydratedUserId = "";
     let authInitialized = false;
 
@@ -1522,7 +1523,7 @@
         },
       })
       : null;
-    const supabaseRequestTimeoutMs = 12000;
+    const supabaseRequestTimeoutMs = 30000;
 
     function mondayFirstIndex(date) {
       return (date.getDay() + 6) % 7;
@@ -1985,7 +1986,7 @@
     }
 
     async function persistCloudPayload() {
-      if (!supabaseClient || !currentUser || suppressCloudSync) return;
+      if (!supabaseClient || !currentUser || suppressCloudSync || cloudSyncSuspended) return;
       const payload = getLocalPayload();
       const { error } = await withTimeout(
         supabaseClient
@@ -2011,7 +2012,7 @@
     }
 
     function queueCloudSync() {
-      if (!supabaseClient || !currentUser || suppressCloudSync) return;
+      if (!supabaseClient || !currentUser || suppressCloudSync || cloudSyncSuspended) return;
       window.clearTimeout(queueCloudSync.timer);
       queueCloudSync.timer = window.setTimeout(() => {
         persistCloudPayload().catch((error) => {
@@ -2045,10 +2046,13 @@
       const localPayload = getLocalPayload();
       let cloudPayload = null;
       try {
+        cloudSyncSuspended = false;
         cloudPayload = await fetchCloudPayload(user.id);
       } catch (error) {
         console.error(error);
+        cloudSyncSuspended = true;
         setAuthMessage(`账号已登录，但云端数据读取失败：${formatAuthError(error)}`, "error");
+        throw error;
       }
 
       if (hasPayloadData(cloudPayload)) {
@@ -2061,6 +2065,7 @@
       }
 
       hydratedUserId = user.id;
+      cloudSyncSuspended = false;
     }
 
     function updateAccountBar() {
@@ -2107,8 +2112,10 @@
             await hydrateUserData(currentUser);
           } catch (error) {
             console.error(error);
-            setAuthMessage(`已登录，但云端数据同步失败：${formatAuthError(error)}`, "error");
-            scheduleStatus.textContent = "已登录，但云端课表暂时没有同步成功。";
+            const readableError = formatAuthError(error);
+            setAuthMessage(`已登录，但云端数据同步失败：${readableError}`, "error");
+            scheduleStatus.textContent = `已登录，但云端课表暂时没有同步成功：${readableError}`;
+            storageNotice.innerHTML = "<strong>云端同步暂停</strong>当前账号已登录，但云端课表读取失败。为避免覆盖云端数据，本次不会自动保存，请稍后刷新页面再试。";
             return;
           }
         }
@@ -2117,6 +2124,7 @@
       }
 
       hydratedUserId = "";
+      cloudSyncSuspended = false;
       clearLocalCache();
       showScheduleView();
       showAuthGate(getAuthQueryMode());
